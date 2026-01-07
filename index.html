@@ -4,32 +4,115 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lab Tools</title>
+
   <style>
-    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; margin: 0; background:#f5f7fa; }
-    header { padding: 28px 20px; background:#001529; color:#fff; }
-    main { max-width: 900px; margin: 0 auto; padding: 20px; }
-    .card { background:#fff; border-radius: 12px; padding: 18px; margin: 14px 0; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
-    a { color:#1890ff; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .muted { color:#666; font-size: 13px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    header {
+      padding: 28px 20px;
+      background: #001529;
+      color: #fff;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    header .subtitle {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #c9d1d9;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h2 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+    }
+
+    .muted {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .card-actions a {
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .card-actions a.primary {
+      color: #1890ff;
+      font-weight: 500;
+    }
+
+    .card-actions a.secondary {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .card-actions a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
+
 <body>
   <header>
-    <h1 style="margin:0;font-size:20px;">实验室小工具集合（Lab Tools）</h1>
-    <div class="muted" style="color:#c9d1d9;margin-top:8px;">
+    <h1>实验室小工具集合（Lab Tools）</h1>
+    <div class="subtitle">
       通过 GitHub Pages 在线访问；数据保存在本机浏览器（localStorage）。
     </div>
   </header>
 
   <main>
+    <!-- 细胞冻存管理系统 -->
     <div class="card">
-      <h2 style="margin:0 0 8px 0;font-size:16px;">细胞冻存管理系统</h2>
-      <div class="muted" style="margin-bottom:10px;">
-        容器 / 孔位管理、全局搜索、低库存预警、导入导出备份。
+      <h2>细胞冻存管理系统</h2>
+      <div class="muted">
+        容器 / 孔位管理，全局搜索，低库存预警，导入导出备份。
       </div>
-      <a href="./tools/cell-storage/">打开工具 →</a>
+
+      <div class="card-actions">
+        <a class="primary" href="./tools/cell-storage/">
+          打开工具 →
+        </a>
+
+        <a class="secondary"
+           href="./tools/cell-storage/MANUAL.md"
+           target="_blank">
+          📘 使用说明
+        </a>
+      </div>
     </div>
+
+    <!-- 以后新增工具，复制上面的 card 即可 -->
   </main>
 </body>
 </html>
