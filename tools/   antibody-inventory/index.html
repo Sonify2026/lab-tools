@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抗体库存管理系统 v1.0.0</title>
+  
+  <style>
+/* ========= UI Skin v2 (2026-01) ========= */
+:root{
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.06);
+  --shadow-md: 0 12px 32px rgba(0,0,0,.10);
+
+  --cell-size: 60px;
+  --cell-gap: 12px;
+  --cell-font: 12px;
+
+  --primary: #1677ff;
+  --primary-2: #69b1ff;
+  --success: #52c41a;
+  --danger: #ff4d4f;
+  --warning: #faad14;
+
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+
+  /* Sidebar (Light) */
+  --sidebar-bg: rgba(255,255,255,.92);
+  --sidebar-bg-2: rgba(250,250,250,.92);
+  --sidebar-text: #0f172a;
+  --sidebar-muted: #64748b;
+  --sidebar-border: rgba(15,23,42,.10);
+  --sidebar-item: rgba(15,23,42,.04);
+  --sidebar-item-hover: rgba(15,23,42,.06);
+  --sidebar-item-active: rgba(22,119,255,.12);
+
+  --focus: 0 0 0 3px rgba(22,119,255,.18);
+}
+
+/* Dark theme */
+body[data-theme="dark"]{
+  --bg: #0b1220;
+  --surface: #0f172a;
+  --surface-2: #101b33;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --border: rgba(148,163,184,.25);
+
+  /* Sidebar (Dark) */
+  --sidebar-bg: #050a14;
+  --sidebar-bg-2: #0b1220;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255,255,255,.70);
+  --sidebar-border: rgba(255,255,255,.08);
+  --sidebar-item: rgba(255,255,255,.06);
+  --sidebar-item-hover: rgba(255,255,255,.09);
+  --sidebar-item-active: rgba(22,119,255,.28);
+
+  --shadow-sm: 0 2px 14px rgba(0,0,0,.35);
+  --shadow-md: 0 18px 44px rgba(0,0,0,.45);
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: radial-gradient(1100px 700px at 10% -10%, rgba(22,119,255,.18), transparent 55%),
+              radial-gradient(900px 600px at 110% 0%, rgba(250,173,20,.16), transparent 55%),
+              var(--bg);
+  color: var(--text);
+}
+
+/* ========= Sidebar ========= */
+.sidebar{
+  width: 268px;
+  padding: 18px 14px;
+  display:flex;
+  flex-direction:column;
+  background: linear-gradient(180deg, var(--sidebar-bg), var(--sidebar-bg-2));
+  border-right: 1px solid var(--sidebar-border);
+  backdrop-filter: blur(10px);
+}
+.logo{
+  color: var(--sidebar-text);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing:.2px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 8px 10px 14px;
+}
+.logo::before{
+  content:"";
+  width:10px;height:10px;border-radius:999px;
+  background: linear-gradient(135deg, #69b1ff, #1677ff);
+  box-shadow: 0 0 0 3px rgba(105,177,255,.18);
+}
+.box-list{
+  flex:1;
+  overflow:auto;
+  padding: 4px 4px 8px;
+}
+.box-item{
+  padding: 10px 12px;
+  cursor:pointer;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  background: var(--sidebar-item);
+  font-size: 12px;
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--sidebar-border);
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  color: var(--sidebar-text);
+}
+.box-item:hover{
+  transform: translateY(-1px);
+  background: var(--sidebar-item-hover);
+  border-color: rgba(22,119,255,.25);
+}
+.box-item.active{
+  background: linear-gradient(135deg, rgba(22,119,255,.20), rgba(105,177,255,.10));
+  border-color: rgba(22,119,255,.40);
+}
+.box-info{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.box-tag{
+  color: var(--sidebar-muted);
+  font-size: 10px;
+  margin-left: 6px;
+}
+.btn-delete-box{
+  padding: 4px 8px;
+  margin-left: 8px;
+  border-radius: 10px;
+  color: var(--sidebar-muted);
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1;
+  transition: background .15s ease, color .15s ease;
+}
+.btn-delete-box:hover{ background: var(--danger); color:#fff; }
+
+.sidebar select,
+.sidebar input{
+  width:100%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--sidebar-border);
+  background: rgba(255,255,255,.65);
+  color: var(--sidebar-text);
+  outline:none;
+}
+body[data-theme="dark"] .sidebar select,
+body[data-theme="dark"] .sidebar input{
+  background: rgba(255,255,255,.06);
+  color: #fff;
+}
+.sidebar input::placeholder{ color: var(--sidebar-muted); }
+.sidebar button{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  cursor:pointer;
+  font-weight: 900;
+  transition: transform .15s ease, filter .15s ease;
+}
+.sidebar button:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+.sidebar button:active{ transform: translateY(0); }
+
+/* ========= Main ========= */
+.main{
+  flex:1;
+  padding: 18px 18px 22px;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+  overflow:hidden;
+  position:relative;
+}
+
+/* Topbar */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding: 6px 2px 2px;
+}
+.app-title{
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing:.2px;
+}
+.app-subtitle{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.topbar-right{ display:flex; gap:10px; align-items:center; }
+.btn-icon{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.8);
+  border: 1px solid var(--border);
+  cursor:pointer;
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+body[data-theme="dark"] .btn-icon{
+  background: rgba(15,23,42,.75);
+  border-color: rgba(148,163,184,.25);
+}
+.btn-icon:hover{ transform: translateY(-1px); border-color: rgba(22,119,255,.35); }
+.btn-icon:active{ transform: translateY(0); }
+.btn-icon .icon{ font-size: 14px; }
+.btn-icon .text{ font-size: 12px; font-weight: 800; }
+
+/* Header search + buttons */
+.header{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  position:relative;
+  z-index:1000;
+}
+.search-wrapper{ flex:1; position:relative; }
+.search-bar{
+  width:100%;
+  padding: 12px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  outline:none;
+  background: rgba(255,255,255,.86);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+body[data-theme="dark"] .search-bar{
+  background: rgba(15,23,42,.75);
+}
+.search-bar:focus{
+  border-color: rgba(22,119,255,.55);
+  box-shadow: var(--shadow-sm), var(--focus);
+}
+.search-dropdown{
+  position:absolute;
+  top: calc(100% + 8px);
+  left:0; right:0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-height: 420px;
+  overflow:auto;
+  border: 1px solid var(--border);
+  display:none;
+}
+.search-item{
+  padding: 12px 16px;
+  cursor:pointer;
+  border-bottom: 1px solid var(--border);
+  display:flex;
+  justify-content: space-between;
+  align-items:flex-start;
+  gap: 12px;
+}
+.search-item:hover{ background: rgba(22,119,255,.08); }
+.loc-tag{
+  font-size: 11px;
+  background: rgba(148,163,184,.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  white-space:nowrap;
+  margin-top: 2px;
+}
+
+.data-btns{ display:flex; gap: 10px; }
+.btn-ghost{
+  background: rgba(255,255,255,.86);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor:pointer;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s ease, border-color .15s ease;
+}
+body[data-theme="dark"] .btn-ghost{ background: rgba(15,23,42,.75); }
+.btn-ghost:hover{ transform: translateY(-1px); border-color: rgba(22,119,255,.35); }
+.btn-ghost:active{ transform: translateY(0); }
+
+/* Layout */
+.content{ display:flex; gap: 16px; flex:1; overflow:hidden; }
+
+/* Box view: left canvas + details */
+.box-view{
+  flex:1;
+  display:flex;
+  gap: 14px;
+  overflow:hidden;
+  padding: 0;
+}
+.box-stage{
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow:auto;
+  padding: 26px;           /* extra padding to avoid hover/scale clipping */
+  display:flex;
+  justify-content:flex-start; /* avoid centering-related cropping on some browsers */
+  align-items:flex-start;
+}
+.empty-tip{ color: var(--muted); margin-top: 30px; text-align:center; width:100%; }
+
+.grid{
+  display:grid;
+  gap: var(--cell-gap);
+  margin: 0;
+  width: max-content;      /* ensures full grid width, scrolls instead of shrinking */
+  padding: 10px;           /* buffer for hover/selection scale */
+}
+
+/* Cell styles */
+.cell{
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: var(--cell-font);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  background: rgba(255,255,255,.7);
+  padding: 6px;
+  text-align:center;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, filter .12s ease;
+  user-select:none;
+}
+body[data-theme="dark"] .cell{ background: rgba(15,23,42,.55); }
+.cell.occupied{
+  border-color: transparent;
+  color: #0b1220;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255,255,255,.55);
+}
+body[data-theme="dark"] .cell.occupied{
+  color: #0b1220; /* keep readable on light HSL backgrounds */
+}
+.cell.occupied:hover{
+  cursor: grab;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(0,0,0,.10);
+}
+.cell.occupied:active{ cursor: grabbing; transform: translateY(-1px); }
+.cell.drag-over{
+  border: 2px dashed rgba(22,119,255,.9);
+  background: rgba(22,119,255,.10) !important;
+}
+.cell.selected{
+  border: 2px solid rgba(22,119,255,.95) !important;
+  box-shadow: var(--focus);
+  z-index: 5;
+  transform: translateY(-2px);
+}
+.cell.highlight-target{
+  animation: highlight-jump 1s infinite alternate;
+  border: 2px solid var(--warning) !important;
+  z-index:10;
+}
+@keyframes highlight-jump{
+  0%{ transform: scale(1); box-shadow: 0 0 0 rgba(250,173,20,.0); }
+  100%{ transform: scale(1.12); box-shadow: 0 0 24px rgba(250,173,20,.35); }
+}
+.cell-name{
+  font-weight: 900;
+  font-size: var(--cell-font);
+  line-height: 1.1;
+  display:-webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
+  word-break: break-word;
+}
+.cell-clone{
+  font-size: 10px;
+  opacity: .85;
+  margin-top: 3px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+
+/* Details card */
+.detail-wrap{
+  width: 360px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  overflow:auto;
+  padding-right: 2px;
+}
+.detail-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow:hidden;
+}
+.detail-card-hd{
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+.detail-title{ font-weight: 900; }
+.detail-hint{ font-size: 12px; color: var(--muted); }
+.detail-body{
+  padding: 14px 16px 16px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.help-list{ margin: 0; padding-left: 18px; color: var(--text); }
+.help-list li{ margin: 8px 0; color: var(--text); }
+.help-card b{ color: var(--primary); }
+
+/* Right panel */
+.panel{
+  width: 360px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  overflow:auto;
+  padding-right: 2px;
+}
+.card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+.card h3{ margin: 0 0 10px; font-size: 14px; }
+.inventory-stats{
+  padding: 12px 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(22,119,255,.35);
+  background: rgba(22,119,255,.08);
+  transition: .2s;
+}
+.stats-danger{
+  background: rgba(255,77,79,.10);
+  border-color: rgba(255,77,79,.45);
+  color: var(--danger);
+  animation: shake .5s;
+}
+@keyframes shake{
+  0%,100%{ transform: translateX(0); }
+  25%{ transform: translateX(-5px); }
+  75%{ transform: translateX(5px); }
+}
+
+label{
+  display:block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 800;
+}
+input, select, textarea{
+  width: 100%;
+  padding: 10px 12px;
+  margin: 6px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.85);
+  color: var(--text);
+  outline: none;
+}
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea{
+  background: rgba(15,23,42,.75);
+}
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(22,119,255,.55);
+  box-shadow: var(--focus);
+}
+textarea{ resize: vertical; min-height: 96px; font-family: inherit; }
+
+.btn-save{
+  background: linear-gradient(135deg, rgba(22,119,255,.95), rgba(105,177,255,.55));
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  width: 100%;
+  border-radius: 14px;
+  font-weight: 900;
+  cursor:pointer;
+  transition: transform .15s ease, filter .15s ease;
+}
+.btn-save:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+.btn-save:active{ transform: translateY(0); }
+
+button#use-once-btn, button#undo-use-btn{
+  border-radius: 12px !important;
+  font-weight: 800;
+}
+
+#global-warning-list{ max-height: 220px; overflow:auto; }
+
+/* Scrollbar (webkit) */
+.box-list::-webkit-scrollbar,
+.search-dropdown::-webkit-scrollbar,
+.box-stage::-webkit-scrollbar,
+.detail-wrap::-webkit-scrollbar,
+.panel::-webkit-scrollbar,
+#global-warning-list::-webkit-scrollbar{
+  width: 10px;
+}
+.box-list::-webkit-scrollbar-thumb,
+.search-dropdown::-webkit-scrollbar-thumb,
+.box-stage::-webkit-scrollbar-thumb,
+.detail-wrap::-webkit-scrollbar-thumb,
+.panel::-webkit-scrollbar-thumb,
+#global-warning-list::-webkit-scrollbar-thumb{
+  background: rgba(148,163,184,.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.box-list::-webkit-scrollbar-thumb:hover,
+.search-dropdown::-webkit-scrollbar-thumb:hover,
+.box-stage::-webkit-scrollbar-thumb:hover,
+.detail-wrap::-webkit-scrollbar-thumb:hover,
+.panel::-webkit-scrollbar-thumb:hover,
+#global-warning-list::-webkit-scrollbar-thumb:hover{
+  background: rgba(148,163,184,.50);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Responsive */
+@media (max-width: 1180px){
+  .detail-wrap{ display:none; }
+  .panel{ width: 340px; }
+}
+@media (max-width: 980px){
+  body{ height:auto; }
+  .sidebar{ display:none; }
+  .main{ padding: 14px; }
+  .content{ flex-direction: column; overflow:auto; }
+  .panel{ width: auto; }
+  .box-view{ flex-direction: column; }
+  .box-stage{ min-height: 380px; }
+}
+  
+  </style>
+
+
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo">🧪 抗体库存管理_v1.6.1</div>
+    <div id="box-list" class="box-list"></div>
+    <div style="padding-top:15px; border-top:1px solid #333;">
+        <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #d9d9d9;">
+          <option value="custom" selected>自定义容器</option>
+          <option value="10x10">10 × 10（常用）</option>
+          <option value="9x9">9 × 9（常用）</option>
+        </select>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="number" id="custom-rows" min="1" step="1" value="8" style="flex:1; padding:10px; border-radius:8px; border:1px solid #d9d9d9;" placeholder="行数">
+          <input type="number" id="custom-cols" min="1" step="1" value="12" style="flex:1; padding:10px; border-radius:8px; border:1px solid #d9d9d9;" placeholder="列数">
+        </div>
+        <button onclick="addNewBox()" style="width:100%; padding:10px; border-radius:6px; border:none; background:var(--primary); color:white; cursor:pointer; font-weight:bold;">+ 新增容器</button>
+        <button onclick="renameCurrentBox()" style="width:100%; margin-top:8px; padding:10px 12px; border:none; border-radius:10px; background:#4b5563; color:white; cursor:pointer; font-weight:bold;">✏️ 重命名当前容器</button>
+    </div>
+</div>
+
+<div class="main">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="app-title">抗体库存管理系统</div>
+            <div class="app-subtitle">Antibody Inventory Manager</div>
+        </div>
+        <div class="topbar-right">
+            <button class="btn-icon" id="theme-toggle" title="切换主题" aria-label="切换主题">
+                <span class="icon">🌓</span><span class="text">主题</span>
+            </button>
+            <button class="btn-icon" id="help-toggle" title="快捷说明" aria-label="快捷说明">
+                <span class="icon">❔</span><span class="text">帮助</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="search-wrapper">
+            <input type="text" id="global-search" class="search-bar" placeholder="🔍 全局搜索：名称/克隆号/供应商/货号/保存条件/备注..." oninput="handleGlobalSearch()">
+            <div id="search-dropdown" class="search-dropdown"></div>
+        </div>
+        <div class="data-btns">
+            <button class="btn-ghost" onclick="exportDB()">📤 导出备份</button>
+            <button class="btn-ghost" onclick="triggerImport()">📥 导入数据</button>
+            <input type="file" id="import-file" style="display:none" onchange="importDB(event)">
+        </div>
+    </div>
+
+    <div class="content">
+        
+        <div class="box-view">
+            <div class="box-stage">
+                <div id="empty-tip" class="empty-tip">请在左侧选择或新增一个容器（用于存放抗体）</div>
+                <div id="grid" class="grid" aria-label="容器网格"></div>
+            </div>
+
+            <div class="detail-wrap">
+                <div id="cell-info" class="detail-card" aria-label="格子详情">
+                    <div class="detail-card-hd">
+                        <div class="detail-title">格子详情</div>
+                        <div class="detail-hint">点击格子查看；支持拖拽移动</div>
+                    </div>
+                    <div id="cell-info-content" class="detail-body">未选择格子</div>
+                </div>
+
+                <div id="help-card" class="detail-card help-card" style="display:none" aria-label="使用说明">
+                    <div class="detail-card-hd">
+                        <div class="detail-title">快捷说明</div>
+                        <div class="detail-hint">常用操作与提示</div>
+                    </div>
+                    <div class="detail-body">
+                        <ul class="help-list">
+                            <li><b>新增容器</b>：左侧选择规格后点击“新增容器”。</li>
+                            <li><b>选中格子</b>：单击可多选；右侧表单支持批量入库/修改。</li>
+                            <li><b>移动位置</b>：拖拽已占用格子到空格子完成移动。</li>
+                            <li><b>全局搜索</b>：支持名称/克隆号/供应商/货号/备注等，点击结果可跳转高亮。</li>
+                            <li><b>低库存预警</b>：为抗体设置“余量预警阈值”，系统将自动汇总到右侧看板。</li>
+                            <li><b>数据备份</b>：导出/导入 JSON 备份用于跨设备迁移。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+    
+            <div class="card">
+                <h3>📝 抗体管理</h3>
+                <div id="stats-area" class="inventory-stats">
+                    <div style="font-size:12px;">选定位置: <strong id="sel-count">0</strong></div>
+                    <div style="margin-top:8px;">
+                        全库总余量: <span id="total-inventory" style="font-size:22px; font-weight:bold;">0</span> 支
+                    </div>
+                </div>
+                <label>抗体名称 (Name)</label>
+                <input type="text" id="cell-name" oninput="updateLiveStats()" placeholder="例如: Anti-CD3">
+                <label>克隆号 (Clone)</label>
+                <input type="text" id="cell-p">
+                <label>入库日期</label>
+                <input type="date" id="cell-date">
+                
+                
+                <label>供应商</label>
+                <select id="ab-vendor"></select>
+                <label>货号 (Catalog #)</label>
+                <input type="text" id="ab-catalog" placeholder="例如: ab12345 / 1234S">
+                
+                <label>批号 (Lot)</label>
+                <input type="text" id="ab-lot" placeholder="例如: GR123456-1">
+<label>浓度</label>
+                <select id="ab-conc"></select>
+                <label>kDa</label>
+                <input type="number" id="ab-kda" placeholder="例如: 55">
+<label>初始余量</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="ab-amount" min="0" step="0.01" placeholder="例如: 200">
+                    <select id="ab-amount-unit" style="max-width:160px;"></select>
+                </div>
+                <label>单次用量（用于估算）</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" id="ab-use-per" min="0" step="0.01" placeholder="例如: 2">
+                    <span id="ab-use-unit-label" style="min-width:46px; color:#666;"></span>
+                    <button type="button" id="use-once-btn" style="padding:8px 10px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; cursor:pointer;">使用一次</button>
+                    <button type="button" id="undo-use-btn" style="padding:8px 10px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; cursor:pointer;">撤销</button>
+                </div>
+                <label>已使用次数</label>
+                <input type="number" id="ab-used-count" min="0" step="1" placeholder="例如: 0">
+                <label>估算剩余</label>
+                <div id="ab-remaining" style="padding:10px; border:1px solid #d9d9d9; border-radius:6px; background:#fafafa; color:#333;">-</div>
+                <label>余量预警阈值</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="ab-warn-threshold" min="0" step="0.01" placeholder="例如: 20">
+                    <span id="ab-warn-unit-label" style="min-width:46px; color:#666; align-self:center;"></span>
+                </div>
+<label>保存条件</label>
+                <select id="ab-storage"></select>
+                <label>到期日期</label>
+                <input type="date" id="ab-expiry">
+<label>宿主 (Host)</label>
+                <select id="ab-host"></select>
+                <label>同型 (Isotype)</label>
+                <select id="ab-isotype"></select>
+                <label>是否偶联/直标 (Conjugate)</label>
+                <select id="ab-conjugate"></select>
+<label>备注（抗体介绍）</label>
+                <textarea id="ab-remark" placeholder="可填写：靶标/用途(WB/IF/IHC)/宿主与同型/稀释比例/保存条件/有效期等"></textarea>
+<button class="btn-save" onclick="saveBatch()">保存并取消选择</button>
+                <button onclick="clearBatch()" style="width:100%; background:none; border:none; color:#999; margin-top:10px; cursor:pointer; font-size:12px;">清空所选位置 (出库)</button>
+            </div>
+
+            <div class="card">
+                <h3 style="color:var(--danger)">⚠️ 低库存预警</h3>
+                <div id="global-warning-list" style="max-height:180px; overflow-y:auto; font-size:13px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+(function(){
+  const KEY='ab_ui_theme_v1';
+  const body=document.body;
+  function apply(theme){
+    body.dataset.theme = theme;
+    localStorage.setItem(KEY, theme);
+  }
+  const saved = localStorage.getItem(KEY);
+  if(saved){ apply(saved); }
+  else{
+    // default: follow system preference
+    try{
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      apply(prefersDark ? 'dark' : 'light');
+    }catch(e){ apply('light'); }
+  }
+
+  function toggleTheme(){
+    const t = body.dataset.theme === 'dark' ? 'light' : 'dark';
+    apply(t);
+  }
+  window.__abToggleTheme = toggleTheme;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('theme-toggle');
+    if(btn) btn.addEventListener('click', toggleTheme);
+
+    const helpBtn = document.getElementById('help-toggle');
+    const helpCard = document.getElementById('help-card');
+    if(helpBtn && helpCard){
+      helpBtn.addEventListener('click', function(){
+        helpCard.style.display = (helpCard.style.display === 'none' || !helpCard.style.display) ? 'block' : 'none';
+      });
+    }
+  });
+})();
+</script>
+
+<script src="app_ui_v3.js"></script>
+</body>
+</html>
