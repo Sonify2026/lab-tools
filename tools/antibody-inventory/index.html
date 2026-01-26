@@ -587,13 +587,120 @@ button#use-once-btn, button#undo-use-btn{
   .box-stage{ min-height: 380px; }
 }
   
-  </style>
+  
+/* ========= Panel Toggle (Integrated Handles) ========= */
+/* Collapse by width so the grid expands */
+.sidebar, .panel{
+  position: relative;
+  flex: 0 0 auto;
+  transition: width .18s ease, padding .18s ease;
+  will-change: width;
+}
+
+/* Keep a slim gutter visible for the handle */
+.sidebar.collapsed{
+  width: 10px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-right: 1px solid var(--sidebar-border);
+}
+.sidebar.collapsed > :not(#sidebar-handle){
+  display: none !important;
+}
+
+.panel.collapsed{
+  width: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.panel.collapsed > :not(#panel-handle){
+  display: none !important;
+}
+
+/* Minimal integrated handles */
+.edge-handle{
+  position: absolute;
+  width: 14px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,.35);
+  background: rgba(148,163,184,.10);
+  cursor: pointer;
+  padding: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  z-index: 3;
+}
+body[data-theme="dark"] .edge-handle{
+  border-color: rgba(148,163,184,.25);
+  background: rgba(148,163,184,.08);
+}
+.edge-handle:active{ transform: scale(.98); }
+
+/* Left handle at the very top of sidebar (requested) */
+#sidebar-handle{
+  top: 10px;
+  right: -4px;     /* minimal overlap */
+  width: 15px;
+  height: 40px;
+  border-radius: 999px;
+}
+
+/* Right handle centered (keep existing preference) */
+#panel-handle{
+  top: 50%;
+  transform: translateY(-50%);
+  left: -7px;
+}
+
+/* Triangle + short line */
+.edge-handle .mh{ position: relative; width: 100%; height: 100%; display:block; }
+#sidebar-handle .mh::before{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 5px;
+  transform: translateX(-50%);
+  width:0;height:0;
+  border-right: 5px solid rgba(22,119,255,.85);
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+#sidebar-handle .mh::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top: 14px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(22,119,255,.45);
+}
+
+/* collapsed => points RIGHT (expand direction) */
+#sidebar-handle.is-collapsed .mh::before{
+  border-right: 0;
+  border-left: 5px solid rgba(22,119,255,.85);
+}
+
+/* Ensure selects stay clickable */
+.panel select, .panel input, .panel textarea,
+.sidebar select, .sidebar input{
+  position: relative;
+  z-index: 5;
+}
+
+</style>
 
 
 </head>
 <body>
 <div class="sidebar">
-    <div class="logo">🧪 抗体库存管理_v1.0.0</div>
+    <button type="button" id="sidebar-handle" class="edge-handle" aria-label="隐藏/显示左侧面板" title="隐藏/显示左侧面板"><span class="mh" aria-hidden="true"></span></button>
+    <div class="logo">抗体库存管理_v1.1.0 🗃️</div>
     <div id="box-list" class="box-list"></div>
     <div style="padding-top:15px; border-top:1px solid #333;">
         <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #d9d9d9;">
@@ -676,6 +783,7 @@ button#use-once-btn, button#undo-use-btn{
         </div>
 
         <div class="panel">
+            <button type="button" id="panel-handle" class="edge-handle" aria-label="隐藏/显示右侧面板" title="隐藏/显示右侧面板">▶</button>
     
             <div class="card">
                 <h3>📝 抗体管理</h3>
@@ -703,7 +811,7 @@ button#use-once-btn, button#undo-use-btn{
 <label>浓度</label>
                 <select id="ab-conc"></select>
                 <label>kDa</label>
-                <input type="number" id="ab-kda" placeholder="例如: 55">
+                <input type="text" id="ab-kda" placeholder="例如: 55 / 50–60 / ~55">
 <label>初始余量</label>
                 <div style="display:flex; gap:8px;">
                     <input type="number" id="ab-amount" min="0" step="0.01" placeholder="例如: 200">
@@ -788,6 +896,41 @@ button#use-once-btn, button#undo-use-btn{
     }
   });
 })();
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var sidebar = document.querySelector('.sidebar');
+  var panel = document.querySelector('.panel');
+  var sh = document.getElementById('sidebar-handle');
+  var ph = document.getElementById('panel-handle');
+
+  function sync(){
+    if(sh && sidebar){
+      sh.classList.toggle('is-collapsed', sidebar.classList.contains('collapsed'));
+    }
+    if(ph && panel){
+      ph.textContent = panel.classList.contains('collapsed') ? '◀' : '▶';
+    }
+  }
+
+  if(sh && sidebar){
+    sh.addEventListener('click', function(e){
+      e.stopPropagation();
+      sidebar.classList.toggle('collapsed');
+      sync();
+    });
+  }
+  if(ph && panel){
+    ph.addEventListener('click', function(e){
+      e.stopPropagation();
+      panel.classList.toggle('collapsed');
+      sync();
+    });
+  }
+  sync();
+});
 </script>
 
 <script src="app.js"></script>
