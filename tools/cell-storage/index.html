@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>细胞冻存管理系统_v1.0</title>
+    <title>细胞冻存管理系统_v2.0</title>
     <style>
         /* ========= 全局样式定义 ========= */
         :root { --primary: #1890ff; --success: #52c41a; --danger: #ff4d4f; --warning: #faad14; --bg: #f5f7fa; --dark: #001529; }
@@ -17,6 +17,10 @@
         .box-item.active { background: var(--primary); border-color: #40a9ff; }
         .box-info { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .box-tag { opacity: 0.5; font-size: 10px; margin-left: 5px; }
+        .box-settings .row { display:flex; gap:10px; }
+        .box-settings .field { flex:1; }
+        .btn-rename-box { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:rgba(255,255,255,0.06); color:#e6f4ff; cursor:pointer; user-select:none; }
+        .btn-rename-box:hover { background:rgba(255,255,255,0.12); }
         .btn-delete-box { padding: 4px 8px; margin-left: 8px; border-radius: 4px; color: #aaa; font-weight: bold; font-size: 14px; line-height: 1; transition: 0.2s; }
         .btn-delete-box:hover { background: var(--danger); color: white; }
 
@@ -40,13 +44,14 @@
         .content { display: flex; gap: 20px; flex: 1; overflow: hidden; }
         
         /* 网格视图容器 (支持横向滚动适配不同规格) */
-        .box-view { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; flex: 1; text-align: center; display: flex; justify-content: center; align-items: flex-start; }
+        .box-view { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; flex: 1; text-align: center; display: flex; justify-content: center; align-items: flex-start;  position: relative; }
         .grid { display: grid; gap: 6px; margin: 0 auto; width: fit-content; }
         
         /* 单个细胞格子样式 */
         .cell {
             width: 48px; height: 48px; border: 1px solid #e8e8e8; border-radius: 6px;
-            font-size: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+            padding: 4px; box-sizing: border-box;
             cursor: pointer; background: #fff; transition: all 0.2s; position: relative;
             user-select: none; /* 防止拖拽时选中文本 */
         }
@@ -63,6 +68,91 @@
         /* 右侧操作面板样式 */
         .panel { width: 340px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+/* ========= Notion / macOS 风格设置卡片 ========= */
+.settings-toggle {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: none;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #111827;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.settings-toggle:hover { box-shadow: 0 10px 26px rgba(0,0,0,0.10); }
+.settings-toggle:active { transform: translateY(1px); }
+
+#btn-toggle-settings{ z-index: 10; }
+
+.settings-card {
+    width: min(360px, calc(100% - 24px));
+    padding: 14px 14px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.10);
+}
+/* 避免设置卡片与左上角按钮重叠 */
+.box-view .settings-card { margin-top: 56px; }
+
+.settings-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.settings-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+}
+.settings-title h3 { margin: 0; font-size: 14px; }
+.settings-title .sub {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 400;
+}
+.settings-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 10px 0; }
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.setting-item label { font-size: 12px; color: #374151; font-weight: 600; margin: 0; }
+.setting-hint { font-size: 12px; color: #6b7280; line-height: 1.4; margin-top: 2px; }
+
+/* 统一输入控件更像 macOS/Notion */
+select, input[type="number"], input[type="text"] {
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.10);
+    background: #fff;
+    color: #111827;
+    outline: none;
+}
+select { padding: 10px; }
+select:focus, input:focus {
+    border-color: rgba(24,144,255,0.55);
+    box-shadow: 0 0 0 4px rgba(24,144,255,0.14);
+}
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
         input { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; }
         .inventory-stats { padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #91d5ff; background: #e6f7ff; transition: 0.3s; }
         .stats-danger { background: #fff1f0; border-color: #ffa39e; color: var(--danger); animation: shake 0.5s; }
@@ -74,14 +164,22 @@
 <body>
 
 <div class="sidebar">
-    <div class="logo">🧪 细胞冻存管理_v1.0</div>
+    <div class="logo">🧪 细胞冻存管理_v2.0</div>
     <div id="box-list" class="box-list"></div>
     <div style="padding-top:15px; border-top:1px solid #333;">
-        <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;">
+        <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;" onchange="toggleCustomSpecFields()">
             <option value="9,9">规格: 9 x 9 (81格)</option>
             <option value="10,10">规格: 10 x 10 (100格)</option>
             <option value="8,12" selected>规格: 96孔板 (8行x12列)</option>
+                    <option value="custom">规格: 自定义...</option>
         </select>
+        <div id="custom-spec-fields" style="display:none; margin-bottom:10px;">
+            <div style="display:flex; gap:8px;">
+                <input id="custom-rows" type="number" min="1" placeholder="行 rows" style="flex:1; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;" />
+                <input id="custom-cols" type="number" min="1" placeholder="列 cols" style="flex:1; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;" />
+            </div>
+            <div style="font-size:12px; color:#a8b3c7; margin-top:6px;">提示：行×列建议 ≤ 400，以免页面卡顿。</div>
+        </div>
         <button onclick="addNewBox()" style="width:100%; padding:10px; border-radius:6px; border:none; background:var(--primary); color:white; cursor:pointer; font-weight:bold;">+ 新增容器</button>
     </div>
 </div>
@@ -101,8 +199,36 @@
 
     <div class="content">
         <div class="box-view">
+            <button id="btn-toggle-settings" class="btn-ghost" style="position:absolute; top:12px; left:12px; display:none;" onclick="toggleBoxSettings()">⚙️ 容器设置</button>
             <div id="empty-tip" style="color:#999; margin-top: 50px;">请在左侧选择或新增一个容器</div>
-            <div id="grid" class="grid"></div>
+
+            
+<div id="box-settings" class="card settings-card" style="display:none;">
+    <div class="settings-header">
+        <div class="settings-title">
+            <h3>🧷 容器设置</h3>
+            <div class="sub">仅影响当前容器的显示方式</div>
+        </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="setting-item">
+        <label for="label-mode">格子标号显示</label>
+        <select id="label-mode" onchange="applyLabelMode()" style="width:100%;">
+            <option value="A1">行字母 + 列数字（A1, B1...）</option>
+            <option value="RC">行号-列号（1-1, 1-2...）</option>
+            <option value="LINEAR">顺序编号（1..N）</option>
+        </select>
+        <div class="setting-hint">小技巧：按住 <strong>Shift</strong> 单击任意格子可为该格设置自定义标签（留空可取消覆盖）。</div>
+    </div>
+
+    <div class="settings-actions">
+        <button class="btn-ghost" onclick="clearAllCustomLabels()" title="清空当前容器所有自定义标签">清空自定义标签</button>
+    </div>
+</div>
+
+<div id="grid"<div id="grid" class="grid"></div>
         </div>
 
         <div class="panel">
@@ -154,6 +280,16 @@
             }
         });
         if (dataNormalized) save();
+
+        // v1.1 数据结构补全：标号模式/自定义标签/行起始字母/缺失字段
+        let v11Normalized = false;
+        Object.values(db.boxes).forEach(box => {
+            if (!box.vials) { box.vials = {}; v11Normalized = true; }
+            if (!box.labelMode) { box.labelMode = 'A1'; v11Normalized = true; }
+            if (!box.customLabels) { box.customLabels = {}; v11Normalized = true; }
+            if (box.labelMode === 'CUSTOM') { box.labelMode = 'A1'; v11Normalized = true; }
+        });
+        if (v11Normalized) save();
         
         renderBoxList();
         updateWarningBoard();
@@ -162,18 +298,67 @@
     }
 
     // ========= 核心业务逻辑：容器管理 =========
-    function addNewBox() {
-        const name = prompt("请输入容器名称 (例如: 96孔板-1):"); if (!name) return;
-        // 解析下拉菜单中的行列规格值 "rows,cols"
-        const specs = document.getElementById('new-box-specs').value.split(',').map(Number);
+    
+
+    function toggleCustomSpecFields() {
+        const sel = document.getElementById('new-box-specs');
+        const wrap = document.getElementById('custom-spec-fields');
+        if (!sel || !wrap) return;
+        wrap.style.display = (sel.value === 'custom') ? 'block' : 'none';
+    }
+
+function addNewBox() {
+        const name = prompt("请输入容器名称 (例如: 96孔板-1):"); 
+        if (!name) return;
+
+        const val = document.getElementById('new-box-specs').value;
+        let rows, cols;
+
+        if (val === 'custom') {
+            const r = parseInt(document.getElementById('custom-rows').value, 10);
+            const c = parseInt(document.getElementById('custom-cols').value, 10);
+            if (!Number.isFinite(r) || !Number.isFinite(c) || r < 1 || c < 1) {
+                alert("请在下方输入自定义行/列（正整数）");
+                return;
+            }
+            // 合理上限：避免渲染卡顿；如需更大可后续做缩放/分页
+            if (r * c > 400) {
+                alert("格子数量过多（>400）可能影响性能，请降低行列或后续再做缩放支持。");
+                return;
+            }
+            rows = r; cols = c;
+        } else {
+            // 解析下拉菜单中的行列规格值 "rows,cols"
+            const specs = val.split(',').map(Number);
+            rows = specs[0]; cols = specs[1];
+        }
+
         const id = 'box_' + Date.now();
-        db.boxes[id] = { name, rows: specs[0], cols: specs[1], vials: {} };
-        save(); renderBoxList(); switchBox(id);
+        db.boxes[id] = { 
+            name: name.trim(), 
+            rows, cols, 
+            vials: {}, 
+            labelMode: 'A1',
+            customLabels: {},
+            };
+        save(); 
+        renderBoxList(); 
+        switchBox(id);
+    }
+
+
+    function renameBox(id, event) {
+        event.stopPropagation();
+        const old = db.boxes[id].name;
+        const next = prompt('请输入新的容器名称：', old);
+        if (!next) return;
+        db.boxes[id].name = next.trim();
+        save(); renderBoxList(); updateWarningBoard();
     }
 
     function deleteBox(id, event) {
         event.stopPropagation(); // 阻止点击事件冒泡，避免触发切换盒子
-        if (!confirm(`⚠️ 高能预警\n\n确定要永久删除容器【${db.boxes[id].name}】及其内所有样本吗？\n此操作无法撤销！`)) return;
+        if (!confirm(`⚠️ 预警\n\n确定要永久删除容器【${db.boxes[id].name}】及其内所有样本吗？\n此操作无法撤销！`)) return;
         
         delete db.boxes[id];
         save();
@@ -188,29 +373,140 @@
         updateWarningBoard();
     }
 
-    function renderBoxList() {
+    
+function renderBoxList() {
         const list = document.getElementById('box-list'); list.innerHTML = '';
         Object.keys(db.boxes).forEach(id => {
             const b = db.boxes[id];
             const div = document.createElement('div'); 
             div.className = `box-item ${id === currentBoxId ? 'active' : ''}`;
-            // 渲染列表项：包含名称、规格标签和删除按钮
+            // 渲染列表项：包含名称、规格标签、重命名和删除按钮
             div.innerHTML = `
                 <div class="box-info">${b.name} <span class="box-tag">${b.rows}x${b.cols}</span></div>
-                <div class="btn-delete-box" onclick="deleteBox('${id}', event)" title="删除此容器">×</div>
+                <div style="display:flex; gap:6px;">
+                    <div class="btn-rename-box" onclick="renameBox('${id}', event)" title="重命名">✎</div>
+                    <div class="btn-delete-box" onclick="deleteBox('${id}', event)" title="删除此容器">×</div>
+                </div>
             `;
             div.onclick = () => { searchHighlightPos = null; switchBox(id); }; 
             list.appendChild(div);
         });
     }
 
+
     function switchBox(id) {
         currentBoxId = id; selectedPositions.clear();
         document.getElementById('empty-tip').style.display = 'none';
+        renderBoxSettings();
         renderGrid(); renderBoxList(); updatePanel();
     }
 
     // ========= 核心业务逻辑：网格渲染与交互 =========
+    
+    // ========= v2.0：格子标号映射 (内部仍使用 r-c 作为位置键) =========
+    function posToLabel(pos, box) {
+        if (box && box.customLabels && box.customLabels[pos]) return box.customLabels[pos];
+        const [rStr, cStr] = pos.split('-');
+        const r = parseInt(rStr, 10), c = parseInt(cStr, 10);
+
+        const mode = (box && box.labelMode) ? box.labelMode : 'RC';
+        switch (mode) {
+            case 'A1': {
+                const start = String(box.rowAlphabetStart || 'A').toUpperCase().charCodeAt(0);
+                const rowCharCode = start + (r - 1);
+                // 简化：仅支持 A-Z；若超出则回退为 RC 显示
+                if (rowCharCode > 90) return `${r}-${c}`;
+                const rowChar = String.fromCharCode(rowCharCode);
+                return `${rowChar}${c}`;
+            }
+            case 'LINEAR': {
+                const idx = (r - 1) * box.cols + c; // 1..N
+                return String(idx);
+            }            case 'RC':
+            default:
+                return `${r}-${c}`;
+        }
+    }
+
+    function labelToPos(label, box) {
+        const t = String(label || '').trim();
+        if (!t || !box) return null;
+
+        // 先反查自定义标签（允许任意文本）
+        if (box.customLabels) {
+            for (const [pos, v] of Object.entries(box.customLabels)) {
+                if (String(v).trim() === t) return pos;
+            }
+        }
+
+        const mode = box.labelMode || 'RC';
+
+        if (mode === 'A1') {
+            const m = t.match(/^([A-Za-z])\s*(\d+)$/);
+            if (!m) return null;
+            const rowChar = m[1].toUpperCase();
+            const col = parseInt(m[2], 10);
+            const row = rowChar.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+            if (row < 1 || row > box.rows || col < 1 || col > box.cols) return null;
+            return `${row}-${col}`;
+        }
+
+        if (mode === 'LINEAR') {
+            const idx = parseInt(t, 10);
+            if (!Number.isFinite(idx) || idx < 1 || idx > box.rows * box.cols) return null;
+            const row = Math.floor((idx - 1) / box.cols) + 1;
+            const col = ((idx - 1) % box.cols) + 1;
+            return `${row}-${col}`;
+        }
+
+        // RC fallback
+        if (/^\d+\s*-\s*\d+$/.test(t)) {
+            const [r, c] = t.split('-').map(s => parseInt(s.trim(), 10));
+            if (r < 1 || r > box.rows || c < 1 || c > box.cols) return null;
+            return `${r}-${c}`;
+        }
+        return null;
+    }
+
+    function renderBoxSettings() {
+        const wrap = document.getElementById('box-settings');
+        if (!wrap) return;
+        if (!currentBoxId || !db.boxes[currentBoxId]) { wrap.style.display = 'none'; const btn = document.getElementById('btn-toggle-settings'); if (btn) btn.style.display = 'none'; return; }
+        const box = db.boxes[currentBoxId];
+        wrap.style.display = 'none';
+        const btn = document.getElementById('btn-toggle-settings');
+        if (btn) { btn.style.display = 'inline-flex'; btn.innerText = '⚙️ 容器设置'; }
+        document.getElementById('label-mode').value = box.labelMode || 'A1';
+    }
+
+    
+    function toggleBoxSettings(force) {
+        const panel = document.getElementById('box-settings');
+        if (!panel) return;
+        const btn = document.getElementById('btn-toggle-settings');
+        const wantShow = (typeof force === 'boolean') ? force : (panel.style.display === 'none');
+        panel.style.display = wantShow ? 'block' : 'none';
+        if (btn) btn.innerText = wantShow ? '✖ 关闭设置' : '⚙️ 容器设置';
+        // 让网格不会被设置面板撑开太多：设置打开时把面板放在上方即可
+    }
+
+function applyLabelMode() {
+        if (!currentBoxId) return;
+        const box = db.boxes[currentBoxId];
+        box.labelMode = document.getElementById('label-mode').value;
+        save(); 
+        renderGrid();
+    }
+
+    function clearAllCustomLabels() {
+        if (!currentBoxId) return;
+        const box = db.boxes[currentBoxId];
+        if (!box.customLabels || Object.keys(box.customLabels).length === 0) return;
+        if (!confirm('确定要清空当前容器所有自定义标签吗？（样本数据不受影响）')) return;
+        box.customLabels = {};
+        save(); renderGrid(); renderBoxSettings();
+    }
+
     function renderGrid() {
         const grid = document.getElementById('grid'); grid.innerHTML = '';
         if (!currentBoxId) return;
@@ -231,15 +527,16 @@
                     // 渲染已占用格子
                     el.classList.add('occupied'); 
                     el.style.backgroundColor = stringToHslColor(v.name); // 应用动态颜色
-                    el.title = `位置: ${pos}\n名称: ${v.name}\n代数: ${v.p || '-'}\n日期: ${v.date || '-'}`; // 悬停提示
-                    el.innerHTML = `<strong style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:44px;">${v.name}</strong><span style="font-size:8px; opacity:0.8">${v.p || ''}</span>`;
+                    const label = posToLabel(pos, box);
+                    el.title = `位置: ${label} (${pos})\n名称: ${v.name}\n代数: ${v.p || '-'}\n日期: ${v.date || '-'}`; // 悬停提示
+                    el.innerHTML = `<strong style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; text-align:left;">${v.name}</strong><span style="font-size:8px; opacity:0.8">${v.p || ''}</span>`;
                     // 启用拖拽起始
                     el.setAttribute('draggable', 'true');
                     el.addEventListener('dragstart', (e) => handleDragStart(e, pos)); 
                     el.addEventListener('dragend', handleDragEnd);
                 } else {
                     // 渲染空格子
-                    el.innerText = pos;
+                    el.innerText = posToLabel(pos, box);
                     // 启用拖拽放置目标
                     el.addEventListener('dragover', handleDragOver);
                     el.addEventListener('dragenter', function() { this.classList.add('drag-over'); });
@@ -252,7 +549,21 @@
                 if (searchHighlightPos === pos) el.classList.add('highlight-target');
                 
                 // 点击事件处理
-                el.addEventListener('click', () => { searchHighlightPos = null; toggleSelect(pos); });
+                el.addEventListener('click', (e) => {
+                    searchHighlightPos = null;
+                    // Shift+点击：设置该格的自定义标签覆盖
+                    if (e.shiftKey) {
+                        const current = (box.customLabels && box.customLabels[pos]) || posToLabel(pos, box);
+                        const next = prompt(`为该格设置显示标签（留空=取消自定义覆盖）\n内部位置键仍为 ${pos}`, current);
+                        if (next === null) return;
+                        box.customLabels = box.customLabels || {};
+                        if (next.trim() === '') delete box.customLabels[pos];
+                        else box.customLabels[pos] = next.trim();
+                        save(); renderGrid(); renderBoxSettings();
+                        return;
+                    }
+                    toggleSelect(pos);
+                });
                 grid.appendChild(el);
             }
         }
@@ -352,7 +663,7 @@
             const box = db.boxes[boxId];
             Object.keys(box.vials).forEach(pos => {
                 const v = box.vials[pos];
-                if (v.name.toLowerCase().includes(term)) matches.push({ boxId, boxName: box.name, pos, name: v.name, p: v.p });
+                if (v.name.toLowerCase().includes(term)) matches.push({ boxId, boxName: box.name, pos, label: posToLabel(pos, box), name: v.name, p: v.p });
             });
         });
         dropdown.innerHTML = matches.length ? matches.map(m => `
@@ -410,6 +721,7 @@
     document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrapper')) document.getElementById('search-dropdown').style.display = 'none'; });
     
     // 启动应用
+    toggleCustomSpecFields();
     init();
 </script>
 </body>
