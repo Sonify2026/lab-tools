@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>细胞冻存管理系统_v2.0</title>
+    <title>细胞冻存管理系统_v2.1</title>
     <style>
         /* ========= 全局样式定义 ========= */
         :root { --primary: #1890ff; --success: #52c41a; --danger: #ff4d4f; --warning: #faad14; --bg: #f5f7fa; --dark: #001529; }
@@ -55,6 +55,10 @@
             cursor: pointer; background: #fff; transition: all 0.2s; position: relative;
             user-select: none; /* 防止拖拽时选中文本 */
         }
+
+        .cell .cell-label { font-size: 9px; opacity: 0.75; line-height: 1.1; }
+        .cell .cell-name { font-size: 10px; font-weight: 700; line-height: 1.15; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cell .cell-meta { font-size: 9px; opacity: 0.85; line-height: 1.1; }
         /* 占用状态 (颜色由JS动态生成覆盖) */
         .cell.occupied { border-color: transparent; color: #333; font-weight: 600; text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
         /* 交互状态: 悬停/拖拽/选中/高亮 */
@@ -159,15 +163,120 @@ select:focus, input:focus {
         .btn-save { background: var(--primary); color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-save:hover { background: #40a9ff; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    </style>
+    
+/* ========= 新建容器：模态输入框 ========= */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.35);
+  display:none; align-items:center; justify-content:center;
+  z-index:2000;
+}
+.modal{
+  width:min(420px, calc(100% - 24px));
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 18px 60px rgba(0,0,0,0.22);
+  border:1px solid rgba(0,0,0,0.08);
+  overflow:hidden;
+}
+.modal-header{
+  padding:14px 16px 10px;
+  display:flex; align-items:flex-start; gap:10px;
+}
+.modal-icon{
+  width:34px; height:34px; border-radius:10px;
+  background:rgba(24,144,255,0.10);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  flex:0 0 auto;
+}
+.modal-title{
+  font-size:14px; font-weight:800; margin:0; color:#111827;
+}
+.modal-sub{
+  margin-top:4px; font-size:12px; color:#6b7280; line-height:1.45;
+}
+.modal-body{ padding:0 16px 12px; }
+.modal-body label{ font-size:12px; color:#374151; font-weight:700; display:block; margin:10px 0 6px; }
+.modal-body input[type="text"]{
+  width:100%; padding:10px 12px; border-radius:10px;
+  border:1px solid rgba(0,0,0,0.12);
+  box-sizing:border-box;
+}
+.modal-body input[type="text"]:focus{
+  border-color: rgba(24,144,255,0.55);
+  box-shadow: 0 0 0 4px rgba(24,144,255,0.14);
+  outline:none;
+}
+.modal-footer{
+  padding:12px 16px 14px;
+  display:flex; justify-content:flex-end; gap:10px;
+  border-top:1px solid rgba(0,0,0,0.06);
+}
+.btn-modal{
+  padding:10px 12px; border-radius:10px; cursor:pointer;
+  font-size:13px; border:1px solid rgba(0,0,0,0.12);
+  background:#fff;
+}
+.btn-modal:hover{ border-color: rgba(24,144,255,0.55); color: var(--primary); }
+.btn-modal-primary{
+  background: var(--primary); color:#fff; border:none;
+}
+.btn-modal-primary:hover{ background:#40a9ff; color:#fff; }
+.modal-hint{
+  margin-top:8px; font-size:12px; color:#6b7280;
+}
+.modal-error{
+  margin-top:8px; font-size:12px; color: var(--danger);
+  display:none;
+}
+
+
+/* ========= 低库存预警列表：更清晰的条目样式 ========= */
+.warn-item{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid rgba(0,0,0,0.06);
+  border-radius:10px;
+  background: rgba(250, 173, 20, 0.08);
+  margin-bottom:8px;
+}
+.warn-name{
+  font-weight:800; color:#111827;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.warn-sub{
+  font-size:12px; color:#6b7280; margin-top:2px;
+}
+.warn-left{ min-width:0; display:flex; flex-direction:column; }
+.warn-count{
+  flex:0 0 auto;
+  font-weight:900;
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid rgba(0,0,0,0.10);
+  color:#111827;
+}
+
+/* ========= 自定义标签：模态输入框 ========= */
+#label-modal-overlay .modal-icon{ background: rgba(82,196,26,0.12); }
+
+
+/* label modal clear button */
+#label-clear{ color: var(--danger); }
+#label-clear:hover{ border-color: rgba(255,77,79,0.55); }
+
+</style>
 </head>
 <body>
 
 <div class="sidebar">
-    <div class="logo">🧪 细胞冻存管理_v2.0</div>
+    <div class="logo">🧪 细胞冻存管理_v2.1</div>
     <div id="box-list" class="box-list"></div>
     <div style="padding-top:15px; border-top:1px solid #333;">
-        <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;" onchange="toggleCustomSpecFields()">
+        <select id="new-box-specs" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; background:#112a45; color:white; border:none;" >
             <option value="9,9">规格: 9 x 9 (81格)</option>
             <option value="10,10">规格: 10 x 10 (100格)</option>
             <option value="8,12" selected>规格: 96孔板 (8行x12列)</option>
@@ -180,26 +289,26 @@ select:focus, input:focus {
             </div>
             <div style="font-size:12px; color:#a8b3c7; margin-top:6px;">提示：行×列建议 ≤ 400，以免页面卡顿。</div>
         </div>
-        <button onclick="addNewBox()" style="width:100%; padding:10px; border-radius:6px; border:none; background:var(--primary); color:white; cursor:pointer; font-weight:bold;">+ 新增容器</button>
+        <button id="btn-add-box" style="width:100%; padding:10px; border-radius:6px; border:none; background:var(--primary); color:white; cursor:pointer; font-weight:bold;">+ 新增容器</button>
     </div>
 </div>
 
 <div class="main">
     <div class="header">
         <div class="search-wrapper">
-            <input type="text" id="global-search" class="search-bar" placeholder="🔍 全局搜索细胞名、代数..." oninput="handleGlobalSearch()">
+            <input type="text" id="global-search" class="search-bar" placeholder="🔍 全局搜索细胞名" >
             <div id="search-dropdown" class="search-dropdown"></div>
         </div>
         <div class="data-btns">
-            <button class="btn-ghost" onclick="exportDB()">📤 导出备份</button>
-            <button class="btn-ghost" onclick="triggerImport()">📥 导入数据</button>
-            <input type="file" id="import-file" style="display:none" onchange="importDB(event)">
+            <button class="btn-ghost" id="btn-export">📤 导出备份</button>
+            <button class="btn-ghost" id="btn-import">📥 导入数据</button>
+            <input type="file" id="import-file" style="display:none" >
         </div>
     </div>
 
     <div class="content">
         <div class="box-view">
-            <button id="btn-toggle-settings" class="btn-ghost" style="position:absolute; top:12px; left:12px; display:none;" onclick="toggleBoxSettings()">⚙️ 容器设置</button>
+            <button id="btn-toggle-settings" class="btn-ghost" style="position:absolute; top:12px; left:12px; display:none;" >⚙️ 容器设置</button>
             <div id="empty-tip" style="color:#999; margin-top: 50px;">请在左侧选择或新增一个容器</div>
 
             
@@ -215,20 +324,20 @@ select:focus, input:focus {
 
     <div class="setting-item">
         <label for="label-mode">格子标号显示</label>
-        <select id="label-mode" onchange="applyLabelMode()" style="width:100%;">
-            <option value="A1">行字母 + 列数字（A1, B1...）</option>
-            <option value="RC">行号-列号（1-1, 1-2...）</option>
-            <option value="LINEAR">顺序编号（1..N）</option>
+        <select id="label-mode" style="width:100%;">
+            <option value="rc">行-列（1-1, 1-2...）</option>
+            <option value="a1">行字母+列数字（A1, B1...）</option>
+            <option value="linear">线性编号（1..N）</option>
         </select>
         <div class="setting-hint">小技巧：按住 <strong>Shift</strong> 单击任意格子可为该格设置自定义标签（留空可取消覆盖）。</div>
     </div>
 
     <div class="settings-actions">
-        <button class="btn-ghost" onclick="clearAllCustomLabels()" title="清空当前容器所有自定义标签">清空自定义标签</button>
+        <button class="btn-ghost" id="btn-clear-labels" title="清空当前容器所有自定义标签">清空自定义标签</button>
     </div>
 </div>
 
-<div id="grid"<div id="grid" class="grid"></div>
+<div id="grid" class="grid"></div>
         </div>
 
         <div class="panel">
@@ -241,18 +350,18 @@ select:focus, input:focus {
                     </div>
                 </div>
                 <label>细胞名称 (Name)</label>
-                <input type="text" id="cell-name" oninput="updateLiveStats()" placeholder="例如: HEK293T">
+                <input type="text" id="cell-name"  placeholder="例如: HEK293T">
                 <label>代数 (P)</label>
                 <input type="text" id="cell-p">
                 <label>冻存日期</label>
                 <input type="date" id="cell-date">
                 
-                <button class="btn-save" onclick="saveBatch()">保存并取消选择</button>
-                <button onclick="clearBatch()" style="width:100%; background:none; border:none; color:#999; margin-top:10px; cursor:pointer; font-size:12px;">清空所选位置 (出库)</button>
+                <button class="btn-save" id="btn-save-batch">保存并取消选择</button>
+                <button id="btn-clear-batch" style="width:100%; background:none; border:none; color:#999; margin-top:10px; cursor:pointer; font-size:12px;">清空所选位置 (出库)</button>
             </div>
 
             <div class="card">
-                <h3 style="color:var(--danger)">⚠️ 低库存预警</h3>
+                <h3 style="color:var(--danger); display:flex; align-items:center; justify-content:space-between; gap:10px;"><span>⚠️ 低库存预警</span><span style="font-size:12px; font-weight:700; color:#111827; display:flex; align-items:center; gap:6px;"><span style="color:#6b7280; font-weight:600;">阈值</span><input id="low-stock-threshold" type="number" min="1" max="999" style="width:64px; padding:6px 8px; border-radius:10px; border:1px solid rgba(0,0,0,0.12);"></span></h3>
                 <div id="global-warning-list" style="max-height:180px; overflow-y:auto; font-size:13px;"></div>
             </div>
         </div>
@@ -260,469 +369,1332 @@ select:focus, input:focus {
 </div>
 
 <script>
-    // ========= 全局变量与初始化 =========
-    // 使用正式的 v1.0 存储键名
-    const STORAGE_KEY = 'cell_storage_v1_db';
-    let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { boxes: {} };
-    let currentBoxId = null;
-    let selectedPositions = new Set();
-    let searchHighlightPos = null; // 用于搜索跳转后的高亮
-    let draggedItemPos = null;     // 用于拖拽记录起始位置
+(() => {
+  'use strict';
 
-    function init() {
-        // 数据结构标准化检查 (确保旧数据包含 rows/cols 属性)
-        let dataNormalized = false;
-        Object.values(db.boxes).forEach(box => {
-            if (box.size && !box.rows) {
-                box.rows = box.size;
-                box.cols = box.size;
-                dataNormalized = true;
-            }
-        });
-        if (dataNormalized) save();
+  // =========================
+  // Config / Constants
+  // =========================
+  const STORAGE_KEY = 'cell_storage_v1_db'; // keep for backward compatibility
+  const DB_VERSION = 3;
+  const MAX_CELLS = 400;
+  const UNDO_LIMIT = 30;
 
-        // v1.1 数据结构补全：标号模式/自定义标签/行起始字母/缺失字段
-        let v11Normalized = false;
-        Object.values(db.boxes).forEach(box => {
-            if (!box.vials) { box.vials = {}; v11Normalized = true; }
-            if (!box.labelMode) { box.labelMode = 'A1'; v11Normalized = true; }
-            if (!box.customLabels) { box.customLabels = {}; v11Normalized = true; }
-            if (box.labelMode === 'CUSTOM') { box.labelMode = 'A1'; v11Normalized = true; }
-        });
-        if (v11Normalized) save();
-        
-        renderBoxList();
+  // =========================
+  // DOM Cache
+  // =========================
+  const el = {};
+  function cacheDom() {
+    el.boxList = document.getElementById('box-list');
+    el.newBoxSpecs = document.getElementById('new-box-specs');
+    el.customSpecFields = document.getElementById('custom-spec-fields');
+    el.customRows = document.getElementById('custom-rows');
+    el.customCols = document.getElementById('custom-cols');
+    el.btnAddBox = document.getElementById('btn-add-box');
+
+    el.btnExport = document.getElementById('btn-export');
+    el.btnImport = document.getElementById('btn-import');
+    el.importFile = document.getElementById('import-file');
+
+    el.btnToggleSettings = document.getElementById('btn-toggle-settings');
+    el.boxSettings = document.getElementById('box-settings');
+    el.labelMode = document.getElementById('label-mode');
+    el.btnClearLabels = document.getElementById('btn-clear-labels');
+
+    el.emptyTip = document.getElementById('empty-tip');
+    el.grid = document.getElementById('grid');
+
+    el.cellName = document.getElementById('cell-name');
+    el.cellP = document.getElementById('cell-p');
+    el.cellDate = document.getElementById('cell-date');
+    el.selCount = document.getElementById('sel-count');
+    el.btnSaveBatch = document.getElementById('btn-save-batch');
+    el.btnClearBatch = document.getElementById('btn-clear-batch');
+
+    el.totalInventory = document.getElementById('total-inventory');
+    el.statsArea = document.getElementById('stats-area');
+
+    el.globalSearch = document.getElementById('global-search');
+    el.searchDropdown = document.getElementById('search-dropdown');
+    el.warningList = document.getElementById('global-warning-list');
+    el.lowStockThreshold = document.getElementById('low-stock-threshold');
+
+    // New box modal
+    el.newBoxModalOverlay = document.getElementById('newbox-modal-overlay');
+    el.newBoxNameInput = document.getElementById('newbox-name-input');
+    el.newBoxModalHint = document.getElementById('newbox-modal-hint');
+    el.newBoxModalError = document.getElementById('newbox-modal-error');
+    el.newBoxCancel = document.getElementById('newbox-cancel');
+    el.newBoxConfirm = document.getElementById('newbox-confirm');
+
+    // Label modal
+    el.labelModalOverlay = document.getElementById('label-modal-overlay');
+    el.labelModalHint = document.getElementById('label-modal-hint');
+    el.labelModalError = document.getElementById('label-modal-error');
+    el.labelInput = document.getElementById('label-input');
+    el.labelCancel = document.getElementById('label-cancel');
+    el.labelClear = document.getElementById('label-clear');
+    el.labelConfirm = document.getElementById('label-confirm');
+
+    // Rename box modal
+    el.renameBoxModalOverlay = document.getElementById('renamebox-modal-overlay');
+    el.renameBoxNameInput = document.getElementById('renamebox-name-input');
+    el.renameBoxModalHint = document.getElementById('renamebox-modal-hint');
+    el.renameBoxModalError = document.getElementById('renamebox-modal-error');
+    el.renameBoxCancel = document.getElementById('renamebox-cancel');
+    el.renameBoxConfirm = document.getElementById('renamebox-confirm');
+  }
+
+  // =========================
+  // State
+  // =========================
+  const state = {
+    db: null,
+    currentBoxId: null,
+    selectedPositions: new Set(),
+    searchHighlightPos: null,
+    searchHighlightTimer: null,
+    undoStack: [],
+    pendingNewBox: null,
+    pendingLabelPos: null,
+    pendingRenameBoxId: null,
+    grid: {
+      boxId: null,
+      rows: 0,
+      cols: 0,
+      cellMap: new Map(),
+    }
+  };
+
+  // =========================
+  // Storage / Migration / Validation
+  // =========================
+  function defaultDB() {
+    return { version: DB_VERSION, boxes: {}, config: { lowStockThreshold: 2 } };
+  }
+
+  function loadDB() {
+    let db;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      db = raw ? JSON.parse(raw) : defaultDB();
+    } catch (e) {
+      console.warn('DB parse failed, reset.', e);
+      db = defaultDB();
+    }
+    state.db = migrateDB(db);
+    saveDB();
+  }
+
+  function saveDB() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.db));
+  }
+
+  function migrateDB(db) {
+    if (!db || typeof db !== 'object') db = {};
+    if (!db.boxes || typeof db.boxes !== 'object') db.boxes = {};
+    if (!db.config || typeof db.config !== 'object') db.config = {};
+    if (!Number.isInteger(db.version)) db.version = 1;
+    if (db.version < 2) {
+      // v1 -> v2: normalize schema, add missing fields, normalize labelMode
+      Object.entries(db.boxes).forEach(([id, box]) => normalizeBoxInPlace(id, box, db.boxes));
+      db.version = 2;
+    }
+
+    if (db.version < 3) {
+      // v2 -> v3: add global config (low stock threshold)
+      if (!db.config || typeof db.config !== 'object') db.config = {};
+      if (!Number.isInteger(db.config.lowStockThreshold) || db.config.lowStockThreshold < 1) db.config.lowStockThreshold = 2;
+      db.version = 3;
+    }
+
+    db.version = DB_VERSION;
+    Object.entries(db.boxes).forEach(([id, box]) => normalizeBoxInPlace(id, box, db.boxes));
+    return db;
+  }
+
+  function validateAndSanitizeImportedDB(data) {
+    const errors = [];
+    if (!data || typeof data !== 'object') errors.push('根对象不是对象。');
+    if (!data.boxes || typeof data.boxes !== 'object') errors.push('缺少 boxes 或 boxes 不是对象。');
+    if (errors.length) return { ok: false, errors };
+
+    const sanitized = defaultDB();
+    sanitized.version = Number.isInteger(data.version) ? data.version : 1;
+
+    for (const [id, box] of Object.entries(data.boxes)) {
+      if (typeof id !== 'string' || !id.trim()) continue;
+      if (!box || typeof box !== 'object') continue;
+
+      const rows = Number.isInteger(box.rows) ? box.rows : 10;
+      const cols = Number.isInteger(box.cols) ? box.cols : 10;
+      if (rows < 1 || cols < 1 || rows * cols > 5000) continue;
+
+      const b = createBoxSkeleton(typeof box.name === 'string' ? box.name : '未命名容器', rows, cols);
+      b.labelMode = normalizeLabelMode(box.labelMode);
+
+      // customLabels whitelist
+      if (box.customLabels && typeof box.customLabels === 'object') {
+        for (const [pos, lab] of Object.entries(box.customLabels)) {
+          if (typeof lab !== 'string') continue;
+          if (!isValidPos(pos, rows, cols)) continue;
+          b.customLabels[pos] = lab;
+        }
+      }
+
+      // vials whitelist
+      if (box.vials && typeof box.vials === 'object') {
+        for (const [pos, vial] of Object.entries(box.vials)) {
+          if (!isValidPos(pos, rows, cols)) continue;
+          if (!vial || typeof vial !== 'object') continue;
+          b.vials[pos] = {
+            name: typeof vial.name === 'string' ? vial.name : '',
+            p: typeof vial.p === 'string' ? vial.p : '',
+            date: typeof vial.date === 'string' ? vial.date : '',
+            notes: typeof vial.notes === 'string' ? vial.notes : ''
+          };
+        }
+      }
+
+      sanitized.boxes[id] = b;
+    }
+
+    if (Object.keys(sanitized.boxes).length === 0) {
+      return { ok: false, errors: ['导入数据中没有有效的容器（boxes 为空或全部无效）。'] };
+    }
+
+    return { ok: true, errors: [], db: migrateDB(sanitized) };
+  }
+
+  function normalizeBoxInPlace(id, box, boxesObj) {
+    if (!box || typeof box !== 'object') {
+      boxesObj[id] = createBoxSkeleton('未命名容器', 10, 10);
+      box = boxesObj[id];
+    }
+    if (typeof box.name !== 'string') box.name = '未命名容器';
+    if (!Number.isInteger(box.rows) || box.rows < 1) box.rows = 10;
+    if (!Number.isInteger(box.cols) || box.cols < 1) box.cols = 10;
+    if (!box.vials || typeof box.vials !== 'object') box.vials = {};
+    if (!box.customLabels || typeof box.customLabels !== 'object') box.customLabels = {};
+    box.labelMode = normalizeLabelMode(box.labelMode);
+
+    // prune vials/customLabels out of range and normalize fields
+    Object.keys(box.vials).forEach((pos) => {
+      if (!isValidPos(pos, box.rows, box.cols)) { delete box.vials[pos]; return; }
+      const vial = box.vials[pos];
+      if (!vial || typeof vial !== 'object') { delete box.vials[pos]; return; }
+      vial.name = typeof vial.name === 'string' ? vial.name : '';
+      vial.p = typeof vial.p === 'string' ? vial.p : '';
+      vial.date = typeof vial.date === 'string' ? vial.date : '';
+      vial.notes = typeof vial.notes === 'string' ? vial.notes : '';
+    });
+    Object.keys(box.customLabels).forEach((pos) => {
+      if (!isValidPos(pos, box.rows, box.cols)) delete box.customLabels[pos];
+      else if (typeof box.customLabels[pos] !== 'string') delete box.customLabels[pos];
+    });
+  }
+
+  // =========================
+  // Helpers
+  // =========================
+
+  // =========================
+  // Modal: New Box Name
+  // =========================
+  function openNewBoxModal(rows, cols) {
+    const overlay = el.newBoxModalOverlay;
+    if (!overlay) return;
+
+    const defaultName = `容器 ${Object.keys(state.db.boxes).length + 1}`;
+    state.pendingNewBox = { rows, cols };
+
+    el.newBoxModalError.style.display = 'none';
+    el.newBoxModalError.textContent = '';
+    el.newBoxNameInput.value = defaultName;
+    el.newBoxModalHint.textContent = `将创建规格：${rows} × ${cols}`;
+
+    overlay.style.display = 'flex';
+    // focus + select for quick overwrite
+    setTimeout(() => {
+      el.newBoxNameInput.focus();
+      el.newBoxNameInput.select();
+    }, 0);
+  }
+
+  function closeNewBoxModal() {
+    if (!el.newBoxModalOverlay) return;
+    el.newBoxModalOverlay.style.display = 'none';
+    state.pendingNewBox = null;
+  }
+
+  function ensureUniqueBoxName(name) {
+    const existing = new Set(Object.values(state.db.boxes).map(b => (b.name || '').trim()));
+    if (!existing.has(name)) return name;
+
+    let i = 2;
+    while (existing.has(`${name} (${i})`)) i++;
+    return `${name} (${i})`;
+  }
+
+  function confirmCreateNewBoxFromModal() {
+    if (!state.pendingNewBox) return;
+
+    const raw = (el.newBoxNameInput.value || '').trim();
+    const base = raw || `容器 ${Object.keys(state.db.boxes).length + 1}`;
+    const name = ensureUniqueBoxName(base);
+
+    const { rows, cols } = state.pendingNewBox;
+
+    const id = `box_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    state.db.boxes[id] = createBoxSkeleton(name, rows, cols);
+    saveDB();
+
+    state.currentBoxId = id;
+    state.selectedPositions.clear();
+    state.searchHighlightPos = null;
+    el.labelMode.value = state.db.boxes[id].labelMode;
+
+    closeNewBoxModal();
+    renderAll();
+  }
+
+
+  // =========================
+  // Modal: Custom Label
+  // =========================
+  function openLabelModal(pos) {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box || !el.labelModalOverlay) return;
+
+    state.pendingLabelPos = pos;
+    const current = (box.customLabels && box.customLabels[pos]) ? box.customLabels[pos] : '';
+
+    el.labelModalError.style.display = 'none';
+    el.labelModalError.textContent = '';
+    el.labelInput.value = current;
+
+    const shown = `${posToLabel(box, pos)}（${pos}）`;
+    el.labelModalHint.textContent = `位置：${shown}`;
+
+    el.labelModalOverlay.style.display = 'flex';
+    setTimeout(() => {
+      el.labelInput.focus();
+      el.labelInput.select();
+    }, 0);
+  }
+
+  function closeLabelModal() {
+    if (!el.labelModalOverlay) return;
+    el.labelModalOverlay.style.display = 'none';
+    state.pendingLabelPos = null;
+  }
+
+  function saveLabelFromModal(mode) {
+    const box = state.db.boxes[state.currentBoxId];
+    const pos = state.pendingLabelPos;
+    if (!box || !pos) return;
+
+    const prev = { ...(box.customLabels || {}) };
+    pushUndo({ type: 'labels', boxId: state.currentBoxId, prev });
+
+    if (mode === 'clear') {
+      if (box.customLabels) delete box.customLabels[pos];
+    } else {
+      const v = (el.labelInput.value || '').trim();
+      if (!v) {
+        if (box.customLabels) delete box.customLabels[pos];
+      } else {
+        if (!box.customLabels || typeof box.customLabels !== 'object') box.customLabels = {};
+        box.customLabels[pos] = v;
+      }
+    }
+
+    saveDB();
+    paintCell(pos);
+    closeLabelModal();
+  }
+
+
+  // =========================
+  // Modal: Rename Box
+  // =========================
+  function openRenameBoxModal(boxId) {
+    const box = state.db.boxes[boxId];
+    if (!box || !el.renameBoxModalOverlay) return;
+
+    state.pendingRenameBoxId = boxId;
+
+    el.renameBoxModalError.style.display = 'none';
+    el.renameBoxModalError.textContent = '';
+    el.renameBoxNameInput.value = (box.name || '').trim() || `容器`;
+    el.renameBoxModalHint.textContent = `规格：${box.rows} × ${box.cols}`;
+
+    el.renameBoxModalOverlay.style.display = 'flex';
+    setTimeout(() => {
+      el.renameBoxNameInput.focus();
+      el.renameBoxNameInput.select();
+    }, 0);
+  }
+
+  function closeRenameBoxModal() {
+    if (!el.renameBoxModalOverlay) return;
+    el.renameBoxModalOverlay.style.display = 'none';
+    state.pendingRenameBoxId = null;
+  }
+
+  function confirmRenameBoxFromModal() {
+    const boxId = state.pendingRenameBoxId;
+    const box = state.db.boxes[boxId];
+    if (!box) return;
+
+    const raw = (el.renameBoxNameInput.value || '').trim();
+    const next = raw || box.name || `容器`;
+
+    // avoid empty; allow duplicate names (consistent with previous behavior)
+    box.name = next;
+    saveDB();
+    renderBoxList();
+    closeRenameBoxModal();
+  }
+
+
+
+  const clampInt = (n, min, max) => Math.max(min, Math.min(max, n));
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+
+  function normalizeLabelMode(mode) {
+    const m = String(mode || '').toLowerCase().trim();
+    if (m === 'a1' || m.includes('a1')) return 'a1';
+    if (m === 'linear' || m.includes('linear')) return 'linear';
+    if (m === 'rc' || m === 'r-c' || m.includes('row') || m.includes('col')) return 'rc';
+    return 'rc';
+  }
+
+  function createBoxSkeleton(name, rows, cols) {
+    return { name, rows, cols, vials: {}, labelMode: 'rc', customLabels: {} };
+  }
+
+  function isValidPos(pos, rows, cols) {
+    if (typeof pos !== 'string') return false;
+    const m = pos.match(/^(\d+)-(\d+)$/);
+    if (!m) return false;
+    const r = parseInt(m[1], 10), c = parseInt(m[2], 10);
+    if (rows && cols) return r >= 1 && r <= rows && c >= 1 && c <= cols;
+    return r >= 1 && c >= 1;
+  }
+
+  function rowNumberToLetters(n) {
+    let s = '';
+    let x = n;
+    while (x > 0) {
+      const r = (x - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      x = Math.floor((x - 1) / 26);
+    }
+    return s;
+  }
+
+  function posToLabel(box, pos) {
+    const [rStr, cStr] = pos.split('-');
+    const r = parseInt(rStr, 10);
+    const c = parseInt(cStr, 10);
+
+    if (box.customLabels && box.customLabels[pos]) return box.customLabels[pos];
+
+    if (box.labelMode === 'a1') return `${rowNumberToLetters(r)}${c}`;
+    if (box.labelMode === 'linear') return String((r - 1) * box.cols + c);
+    return `${r}-${c}`;
+  }
+
+  function stringToHslColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      hash |= 0;
+    }
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 60%, 88%)`;
+  }
+
+  function downloadText(filename, text) {
+    const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function pushUndo(entry) {
+    state.undoStack.push(entry);
+    if (state.undoStack.length > UNDO_LIMIT) state.undoStack.shift();
+  }
+
+  function applyUndo() {
+    const last = state.undoStack.pop();
+    if (!last) return;
+    const box = state.db.boxes[last.boxId];
+    if (!box) return;
+
+    if (last.type === 'move') {
+      if (last.toVial) box.vials[last.toPos] = last.toVial; else delete box.vials[last.toPos];
+      if (last.fromVial) box.vials[last.fromPos] = last.fromVial; else delete box.vials[last.fromPos];
+      saveDB();
+      paintCell(last.fromPos);
+      paintCell(last.toPos);
+    } else if (last.type === 'batch') {
+      last.prev.forEach(({pos, vial}) => {
+        if (vial) box.vials[pos] = vial;
+        else delete box.vials[pos];
+        paintCell(pos);
+      });
+      saveDB();
+    } else if (last.type === 'labels') {
+      box.customLabels = last.prev || {};
+      saveDB();
+      refreshAllCells(); // label affects all cells
+    }
+
+    updateLiveStats();
+    updateWarningBoard();
+  }
+
+  // =========================
+  // Rendering (Incremental Grid)
+  // =========================
+  function renderAll() {
+    renderBoxList();
+    ensureGridBuilt();
+    refreshAllCells();
+    updatePanel();
+    updateLiveStats();
+    updateWarningBoard();
+  }
+
+  function renderBoxList() {
+    const ids = Object.keys(state.db.boxes);
+    if (!ids.length) {
+      el.boxList.innerHTML = '<div style="opacity:.6;font-size:12px;line-height:1.6;">暂无容器，请先添加。</div>';
+      el.emptyTip.style.display = 'block';
+      el.btnToggleSettings.style.display = 'none';
+      el.grid.innerHTML = '';
+      return;
+    }
+    el.emptyTip.style.display = 'none';
+    el.btnToggleSettings.style.display = 'inline-flex';
+
+    el.boxList.innerHTML = ids.map(id => {
+      const box = state.db.boxes[id];
+      const active = id === state.currentBoxId ? 'active' : '';
+      const tag = `${box.rows}×${box.cols}`;
+      return `
+        <div class="box-item ${active}" data-boxid="${escapeHtml(id)}">
+          <div class="box-info" title="${escapeHtml(box.name)}">${escapeHtml(box.name)} <span class="box-tag">${escapeHtml(tag)}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="btn-rename-box" data-action="rename" data-boxid="${escapeHtml(id)}" title="重命名">✎</div>
+            <div class="btn-delete-box" data-action="delete" data-boxid="${escapeHtml(id)}" title="删除">×</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function ensureGridBuilt() {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) {
+      el.grid.innerHTML = '';
+      state.grid.boxId = null;
+      state.grid.cellMap.clear();
+      return;
+    }
+
+    const needsRebuild =
+      state.grid.boxId !== state.currentBoxId ||
+      state.grid.rows !== box.rows ||
+      state.grid.cols !== box.cols ||
+      state.grid.cellMap.size !== box.rows * box.cols;
+
+    if (!needsRebuild) {
+      el.grid.style.gridTemplateColumns = `repeat(${box.cols}, 1fr)`;
+      el.grid.style.gridTemplateRows = `repeat(${box.rows}, 1fr)`;
+      return;
+    }
+
+    state.grid.boxId = state.currentBoxId;
+    state.grid.rows = box.rows;
+    state.grid.cols = box.cols;
+    state.grid.cellMap.clear();
+
+    el.grid.style.gridTemplateColumns = `repeat(${box.cols}, 1fr)`;
+    el.grid.style.gridTemplateRows = `repeat(${box.rows}, 1fr)`;
+
+    const frag = document.createDocumentFragment();
+    for (let r = 1; r <= box.rows; r++) {
+      for (let c = 1; c <= box.cols; c++) {
+        const pos = `${r}-${c}`;
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.pos = pos;
+        frag.appendChild(cell);
+        state.grid.cellMap.set(pos, cell);
+      }
+    }
+    el.grid.innerHTML = '';
+    el.grid.appendChild(frag);
+  }
+
+  function refreshAllCells() {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    for (let r = 1; r <= box.rows; r++) {
+      for (let c = 1; c <= box.cols; c++) {
+        paintCell(`${r}-${c}`);
+      }
+    }
+  }
+
+  function paintCell(pos) {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    const cell = state.grid.cellMap.get(pos);
+    if (!cell) return;
+
+    const label = posToLabel(box, pos);
+    const vial = box.vials[pos];
+
+    cell.dataset.label = label;
+
+    cell.classList.toggle('occupied', !!vial);
+    cell.classList.toggle('selected', state.selectedPositions.has(pos));
+    cell.classList.toggle('highlight-target', state.searchHighlightPos === pos);
+
+    if (vial) cell.setAttribute('draggable', 'true');
+    else cell.removeAttribute('draggable');
+
+    if (vial) {
+      const name = (vial.name || '').trim();
+      const p = (vial.p || '').trim();
+      const date = (vial.date || '').trim();
+      cell.style.background = stringToHslColor(name);
+      cell.title = `${label}\n${name}  ${p}  ${date}`.trim();
+      cell.innerHTML = `
+        <span class="cell-label">${escapeHtml(label)}</span>
+        <span class="cell-name">${escapeHtml(name || '—')}</span>
+        <span class="cell-meta">${escapeHtml(p || '')}</span>
+      `;
+    } else {
+      cell.style.background = '';
+      cell.title = label;
+      cell.innerHTML = `<span class="cell-label">${escapeHtml(label)}</span>`;
+    }
+  }
+
+  // =========================
+  // Panel / Stats / Warning
+  // =========================
+  function updatePanel() {
+    const n = state.selectedPositions.size;
+    el.selCount.textContent = String(n);
+    el.btnSaveBatch.disabled = n === 0 || !state.currentBoxId;
+    el.btnClearBatch.disabled = n === 0 || !state.currentBoxId;
+  }
+
+  function updateLiveStats() {
+    const name = el.cellName.value.trim();
+    if (!name) {
+      el.totalInventory.textContent = '0';
+      el.statsArea.innerHTML = `<div style="color:#666; font-size:12px;">输入细胞名后显示统计</div>`;
+      return;
+    }
+
+    const key = name.toLowerCase();
+    const matches = [];
+    for (const [boxId, box] of Object.entries(state.db.boxes)) {
+      for (const [pos, vial] of Object.entries(box.vials || {})) {
+        if ((vial.name || '').toLowerCase() === key) {
+          matches.push({ boxId, boxName: box.name, pos, label: posToLabel(box, pos), p: vial.p || '', date: vial.date || '' });
+        }
+      }
+    }
+
+    el.totalInventory.textContent = String(matches.length);
+    if (!matches.length) {
+      el.statsArea.innerHTML = `<div style="color:#666; font-size:12px;">未找到该细胞的冻存记录</div>`;
+      return;
+    }
+
+    const byP = new Map();
+    for (const m of matches) {
+      const p = (m.p || '').trim() || '未填写';
+      if (!byP.has(p)) byP.set(p, []);
+      byP.get(p).push(m);
+    }
+
+    const rows = [...byP.entries()]
+      .sort((a,b) => a[0].localeCompare(b[0], 'zh-Hans-CN'))
+      .map(([p, arr]) => {
+        const chips = arr.slice(0, 8).map(x => `<span class="chip" title="${escapeHtml(x.boxName)} @ ${escapeHtml(x.label)}">${escapeHtml(x.label)}</span>`).join(' · ');
+        const more = arr.length > 8 ? `<span class="muted">+${arr.length - 8}...</span>` : '';
+        return `
+          <div class="stat-row">
+            <div class="stat-left"><strong>${escapeHtml(p)}</strong><div class="muted">${arr.length} 管</div></div>
+            <div class="stat-right">${chips} ${more}</div>
+          </div>
+        `;
+      }).join('');
+
+    el.statsArea.innerHTML = rows;
+  }
+
+  function updateWarningBoard() {
+    const counts = new Map();
+    const nameMap = new Map();
+    for (const box of Object.values(state.db.boxes)) {
+      for (const vial of Object.values(box.vials || {})) {
+        const name = (vial.name || '').trim();
+        if (!name) continue;
+        const k = name.toLowerCase();
+        if(!nameMap.has(k)) nameMap.set(k, name);
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
+    }
+    const threshold = parseInt(state.db?.config?.lowStockThreshold || (el.lowStockThreshold ? el.lowStockThreshold.value : 2) || 2, 10);
+    const th = (Number.isFinite(threshold) && threshold > 0) ? threshold : 2;
+    const warnings = [...counts.entries()].filter(([, n]) => n <= th).sort((a,b) => a[1]-b[1]);
+    if (!warnings.length) {
+      el.warningList.innerHTML = `<div class="muted">暂无低库存预警</div>`;
+      return;
+    }
+    el.warningList.innerHTML = warnings.slice(0, 20).map(([k, n]) => {
+      const displayName = nameMap.get(k) || k;
+      return `
+        <div class="warn-item">
+          <div class="warn-left">
+            <div class="warn-name">${escapeHtml(displayName)}</div>
+            <div class="warn-sub">余量预警</div>
+          </div>
+          <div class="warn-count">${n} 管</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // =========================
+  // Actions: Select / Batch / Drag / Settings
+  // =========================
+  function toggleSelect(pos) {
+    // any manual interaction cancels search highlight
+    clearSearchHighlight();
+    if (!state.currentBoxId) return;
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    if (!isValidPos(pos, box.rows, box.cols)) return;
+
+    if (state.selectedPositions.has(pos)) state.selectedPositions.delete(pos);
+    else state.selectedPositions.add(pos);
+
+    paintCell(pos);
+    updatePanel();
+  }
+
+  function batchSave() {
+    if (!state.currentBoxId) return;
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    const positions = [...state.selectedPositions];
+    if (!positions.length) return;
+
+    const name = el.cellName.value.trim();
+    const p = el.cellP.value.trim();
+    const date = el.cellDate.value.trim();
+
+    const prev = positions.map(pos => ({ pos, vial: box.vials[pos] ? { ...box.vials[pos] } : null }));
+    pushUndo({ type: 'batch', boxId: state.currentBoxId, prev });
+
+    positions.forEach(pos => {
+      box.vials[pos] = { name, p, date, notes: box.vials[pos]?.notes || '' };
+      paintCell(pos);
+    });
+
+    saveDB();
+    state.selectedPositions.clear();
+    // remove selection class from previously selected cells efficiently
+    prev.forEach(({pos}) => paintCell(pos));
+
+    updatePanel();
+    updateLiveStats();
+    updateWarningBoard();
+  }
+
+  function batchClear() {
+    if (!state.currentBoxId) return;
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    const positions = [...state.selectedPositions];
+    if (!positions.length) return;
+
+    const prev = positions.map(pos => ({ pos, vial: box.vials[pos] ? { ...box.vials[pos] } : null }));
+    pushUndo({ type: 'batch', boxId: state.currentBoxId, prev });
+
+    positions.forEach(pos => {
+      delete box.vials[pos];
+      paintCell(pos);
+    });
+
+    saveDB();
+    state.selectedPositions.clear();
+    prev.forEach(({pos}) => paintCell(pos));
+
+    updatePanel();
+    updateLiveStats();
+    updateWarningBoard();
+  }
+
+  function moveVial(fromPos, toPos) {
+    if (!state.currentBoxId) return;
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    if (!box.vials[fromPos]) return;
+    if (box.vials[toPos]) return;
+
+    const fromVial = { ...box.vials[fromPos] };
+    const toVial = box.vials[toPos] ? { ...box.vials[toPos] } : null;
+
+    pushUndo({ type: 'move', boxId: state.currentBoxId, fromPos, toPos, fromVial, toVial });
+
+    box.vials[toPos] = fromVial;
+    delete box.vials[fromPos];
+    saveDB();
+    paintCell(fromPos);
+    paintCell(toPos);
+
+    updateLiveStats();
+    updateWarningBoard();
+  }
+
+  function applyLabelMode() {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    box.labelMode = normalizeLabelMode(el.labelMode.value);
+    saveDB();
+    refreshAllCells(); // labels change, but structure same
+  }
+
+  function clearCustomLabels() {
+    const box = state.db.boxes[state.currentBoxId];
+    if (!box) return;
+    const prev = { ...box.customLabels };
+    pushUndo({ type: 'labels', boxId: state.currentBoxId, prev });
+    box.customLabels = {};
+    saveDB();
+    refreshAllCells();
+  }
+
+  function setCustomLabelForPos(pos) {
+    // Use modal instead of browser prompt for a better UX
+    openLabelModal(pos);
+  }
+
+  
+  function clearSearchHighlight() {
+    if (state.searchHighlightTimer) {
+      clearTimeout(state.searchHighlightTimer);
+      state.searchHighlightTimer = null;
+    }
+    if (state.searchHighlightPos) {
+      const prev = state.searchHighlightPos;
+      state.searchHighlightPos = null;
+      paintCell(prev);
+    }
+  }
+
+
+// =========================
+  // Search
+  // =========================
+  function searchAll(keyword) {
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return [];
+    const matches = [];
+    for (const [boxId, box] of Object.entries(state.db.boxes)) {
+      for (const [pos, vial] of Object.entries(box.vials || {})) {
+        const name = (vial.name || '').trim();
+        if (!name) continue;
+        if (name.toLowerCase().includes(kw)) {
+          matches.push({
+            boxId,
+            boxName: box.name,
+            pos,
+            label: posToLabel(box, pos),
+            name,
+            p: (vial.p || '').trim(),
+            date: (vial.date || '').trim()
+          });
+        }
+      }
+    }
+    return matches.slice(0, 50);
+  }
+
+  function renderSearchDropdown(matches) {
+    if (!matches.length) {
+      el.searchDropdown.style.display = 'none';
+      el.searchDropdown.innerHTML = '';
+      return;
+    }
+    el.searchDropdown.style.display = 'block';
+    el.searchDropdown.innerHTML = matches.map((m, idx) => {
+      return `
+        <div class="search-item" data-action="jump-search" data-idx="${idx}">
+          <div class="search-title">${escapeHtml(m.name)} <span class="search-tag">[${escapeHtml(m.label)}]</span></div>
+          <div class="search-sub">${escapeHtml(m.boxName)} · ${escapeHtml(m.p)} ${escapeHtml(m.date)}</div>
+        </div>
+      `;
+    }).join('');
+    el.searchDropdown._matches = matches;
+  }
+
+  function jumpToSearchIndex(idx) {
+    const matches = el.searchDropdown._matches || [];
+    const m = matches[idx];
+    if (!m) return;
+
+    if (state.currentBoxId !== m.boxId) {
+      state.currentBoxId = m.boxId;
+      state.selectedPositions.clear();
+      ensureGridBuilt();
+      renderBoxList();
+      // ensure label mode UI matches
+      el.labelMode.value = state.db.boxes[state.currentBoxId].labelMode;
+    }
+
+        // highlight the target briefly (auto stop blinking)
+    const prev = state.searchHighlightPos;
+    if (state.searchHighlightTimer) { clearTimeout(state.searchHighlightTimer); state.searchHighlightTimer = null; }
+    state.searchHighlightPos = m.pos;
+    if (prev) paintCell(prev);
+    paintCell(m.pos);
+    state.searchHighlightTimer = setTimeout(() => {
+      clearSearchHighlight();
+    }, 2000);
+
+    const cell = state.grid.cellMap.get(m.pos);
+    if (cell) cell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+    updatePanel();
+    updateLiveStats();
+    updateWarningBoard();
+    // auto clear search box after jump
+    el.globalSearch.value = '';
+    el.searchDropdown.style.display = 'none';
+  }
+
+  // =========================
+  // Import / Export
+  // =========================
+  function exportDB() {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadText(`cell_freeze_backup_${stamp}.json`, JSON.stringify(state.db, null, 2));
+  }
+
+  function importDBFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result || ''));
+        const res = validateAndSanitizeImportedDB(data);
+        if (!res.ok) {
+          alert('导入失败：\n' + res.errors.map(e => `- ${e}`).join('\n'));
+          return;
+        }
+        state.db = res.db;
+        saveDB();
+        state.currentBoxId = Object.keys(state.db.boxes)[0] || null;
+        state.selectedPositions.clear();
+        state.searchHighlightPos = null;
+        state.undoStack = [];
+        // sync label mode UI
+        if (state.currentBoxId) el.labelMode.value = state.db.boxes[state.currentBoxId].labelMode;
+    // init low stock threshold
+    if (el.lowStockThreshold) {
+      const t = parseInt(state.db?.config?.lowStockThreshold || 2, 10);
+      el.lowStockThreshold.value = String(Number.isFinite(t) && t > 0 ? t : 2);
+    }
+        renderAll();
+        alert('导入成功。');
+      } catch (e) {
+        alert('导入失败：无法解析 JSON。');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  // =========================
+  // Box CRUD
+  // =========================
+  function addNewBox() {
+    const spec = el.newBoxSpecs.value;
+    let rows = 10, cols = 10;
+
+    if (spec === 'custom') {
+      rows = clampInt(parseInt(el.customRows.value, 10) || 1, 1, 100);
+      cols = clampInt(parseInt(el.customCols.value, 10) || 1, 1, 100);
+    } else {
+      const s = String(spec).trim();
+      // 支持：9,9  / 9x9 / 9×9 / 9X9
+      const m = s.match(/^(\d+)\s*[,xX×]\s*(\d+)$/);
+      if (m) {
+        rows = parseInt(m[1], 10);
+        cols = parseInt(m[2], 10);
+      }
+    }
+
+    if (rows * cols > MAX_CELLS) {
+      alert(`自定义规格过大（${rows}×${cols}=${rows * cols}），请控制在 ${MAX_CELLS} 格以内。`);
+      return;
+    }
+
+    // Open elegant modal to name the new box
+    openNewBoxModal(rows, cols);
+  }
+
+  function renameBox(boxId) {
+    // Use modal instead of browser prompt
+    openRenameBoxModal(boxId);
+  }
+
+  function deleteBox(boxId) {
+    if (!state.db.boxes[boxId]) return;
+    if (!confirm('确定删除该容器？此操作不可恢复。')) return;
+    delete state.db.boxes[boxId];
+    saveDB();
+    const ids = Object.keys(state.db.boxes);
+    state.currentBoxId = ids[0] || null;
+    state.selectedPositions.clear();
+    state.searchHighlightPos = null;
+    if (state.currentBoxId) el.labelMode.value = state.db.boxes[state.currentBoxId].labelMode;
+    renderAll();
+  }
+
+  function switchBox(boxId) {
+    if (!state.db.boxes[boxId]) return;
+    state.currentBoxId = boxId;
+    state.selectedPositions.clear();
+    clearSearchHighlight();
+    el.labelMode.value = state.db.boxes[boxId].labelMode;
+    renderAll();
+  }
+
+  // =========================
+  // Events
+  // =========================
+  function bindEvents() {
+    // Sidebar
+    el.newBoxSpecs.addEventListener('change', toggleCustomSpecFields);
+    el.btnAddBox.addEventListener('click', addNewBox);
+
+    // Low stock threshold
+    if (el.lowStockThreshold) {
+      el.lowStockThreshold.addEventListener('input', () => {
+        const v = parseInt(el.lowStockThreshold.value || '2', 10);
+        const t = Number.isFinite(v) ? Math.max(1, Math.min(999, v)) : 2;
+        el.lowStockThreshold.value = String(t);
+        if (!state.db.config || typeof state.db.config !== 'object') state.db.config = {};
+        state.db.config.lowStockThreshold = t;
+        saveDB();
         updateWarningBoard();
-        // 如果没有容器，显示提示信息
-        if (Object.keys(db.boxes).length === 0) document.getElementById('empty-tip').style.display = 'block';
-    }
-
-    // ========= 核心业务逻辑：容器管理 =========
-    
-
-    function toggleCustomSpecFields() {
-        const sel = document.getElementById('new-box-specs');
-        const wrap = document.getElementById('custom-spec-fields');
-        if (!sel || !wrap) return;
-        wrap.style.display = (sel.value === 'custom') ? 'block' : 'none';
-    }
-
-function addNewBox() {
-        const name = prompt("请输入容器名称 (例如: 96孔板-1):"); 
-        if (!name) return;
-
-        const val = document.getElementById('new-box-specs').value;
-        let rows, cols;
-
-        if (val === 'custom') {
-            const r = parseInt(document.getElementById('custom-rows').value, 10);
-            const c = parseInt(document.getElementById('custom-cols').value, 10);
-            if (!Number.isFinite(r) || !Number.isFinite(c) || r < 1 || c < 1) {
-                alert("请在下方输入自定义行/列（正整数）");
-                return;
-            }
-            // 合理上限：避免渲染卡顿；如需更大可后续做缩放/分页
-            if (r * c > 400) {
-                alert("格子数量过多（>400）可能影响性能，请降低行列或后续再做缩放支持。");
-                return;
-            }
-            rows = r; cols = c;
-        } else {
-            // 解析下拉菜单中的行列规格值 "rows,cols"
-            const specs = val.split(',').map(Number);
-            rows = specs[0]; cols = specs[1];
-        }
-
-        const id = 'box_' + Date.now();
-        db.boxes[id] = { 
-            name: name.trim(), 
-            rows, cols, 
-            vials: {}, 
-            labelMode: 'A1',
-            customLabels: {},
-            };
-        save(); 
-        renderBoxList(); 
-        switchBox(id);
+      });
     }
 
 
-    function renameBox(id, event) {
-        event.stopPropagation();
-        const old = db.boxes[id].name;
-        const next = prompt('请输入新的容器名称：', old);
-        if (!next) return;
-        db.boxes[id].name = next.trim();
-        save(); renderBoxList(); updateWarningBoard();
-    }
+    // New box modal events
+    el.newBoxCancel.addEventListener('click', closeNewBoxModal);
+    el.newBoxConfirm.addEventListener('click', confirmCreateNewBoxFromModal);
 
-    function deleteBox(id, event) {
-        event.stopPropagation(); // 阻止点击事件冒泡，避免触发切换盒子
-        if (!confirm(`⚠️ 预警\n\n确定要永久删除容器【${db.boxes[id].name}】及其内所有样本吗？\n此操作无法撤销！`)) return;
-        
-        delete db.boxes[id];
-        save();
-        // 如果删除的是当前显示的盒子，重置视图
-        if (currentBoxId === id) {
-            currentBoxId = null;
-            document.getElementById('grid').innerHTML = '';
-            document.getElementById('empty-tip').style.display = 'block';
-            updatePanel();
-        }
-        renderBoxList();
-        updateWarningBoard();
-    }
+    // Click outside to close
+    el.newBoxModalOverlay.addEventListener('click', (e) => {
+      if (e.target === el.newBoxModalOverlay) closeNewBoxModal();
+    });
 
-    
-function renderBoxList() {
-        const list = document.getElementById('box-list'); list.innerHTML = '';
-        Object.keys(db.boxes).forEach(id => {
-            const b = db.boxes[id];
-            const div = document.createElement('div'); 
-            div.className = `box-item ${id === currentBoxId ? 'active' : ''}`;
-            // 渲染列表项：包含名称、规格标签、重命名和删除按钮
-            div.innerHTML = `
-                <div class="box-info">${b.name} <span class="box-tag">${b.rows}x${b.cols}</span></div>
-                <div style="display:flex; gap:6px;">
-                    <div class="btn-rename-box" onclick="renameBox('${id}', event)" title="重命名">✎</div>
-                    <div class="btn-delete-box" onclick="deleteBox('${id}', event)" title="删除此容器">×</div>
-                </div>
-            `;
-            div.onclick = () => { searchHighlightPos = null; switchBox(id); }; 
-            list.appendChild(div);
-        });
-    }
+    // Enter to confirm / Esc to cancel
+    el.newBoxNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmCreateNewBoxFromModal();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeNewBoxModal();
+      }
+    });
 
 
-    function switchBox(id) {
-        currentBoxId = id; selectedPositions.clear();
-        document.getElementById('empty-tip').style.display = 'none';
-        renderBoxSettings();
-        renderGrid(); renderBoxList(); updatePanel();
-    }
+    // Box list delegation
+    el.boxList.addEventListener('click', (e) => {
+      const actionEl = e.target.closest('[data-action]');
+      const itemEl = e.target.closest('.box-item');
+      const boxId = actionEl?.dataset.boxid || itemEl?.dataset.boxid;
+      if (!boxId) return;
 
-    // ========= 核心业务逻辑：网格渲染与交互 =========
-    
-    // ========= v2.0：格子标号映射 (内部仍使用 r-c 作为位置键) =========
-    function posToLabel(pos, box) {
-        if (box && box.customLabels && box.customLabels[pos]) return box.customLabels[pos];
-        const [rStr, cStr] = pos.split('-');
-        const r = parseInt(rStr, 10), c = parseInt(cStr, 10);
+      const action = actionEl?.dataset.action;
+      if (action === 'delete') return deleteBox(boxId);
+      if (action === 'rename') return renameBox(boxId);
+      return switchBox(boxId);
+    });
 
-        const mode = (box && box.labelMode) ? box.labelMode : 'RC';
-        switch (mode) {
-            case 'A1': {
-                const start = String(box.rowAlphabetStart || 'A').toUpperCase().charCodeAt(0);
-                const rowCharCode = start + (r - 1);
-                // 简化：仅支持 A-Z；若超出则回退为 RC 显示
-                if (rowCharCode > 90) return `${r}-${c}`;
-                const rowChar = String.fromCharCode(rowCharCode);
-                return `${rowChar}${c}`;
-            }
-            case 'LINEAR': {
-                const idx = (r - 1) * box.cols + c; // 1..N
-                return String(idx);
-            }            case 'RC':
-            default:
-                return `${r}-${c}`;
-        }
-    }
 
-    function labelToPos(label, box) {
-        const t = String(label || '').trim();
-        if (!t || !box) return null;
 
-        // 先反查自定义标签（允许任意文本）
-        if (box.customLabels) {
-            for (const [pos, v] of Object.entries(box.customLabels)) {
-                if (String(v).trim() === t) return pos;
-            }
-        }
+    // Label modal events
+    el.labelCancel.addEventListener('click', closeLabelModal);
+    el.labelConfirm.addEventListener('click', () => saveLabelFromModal('save'));
+    el.labelClear.addEventListener('click', () => saveLabelFromModal('clear'));
 
-        const mode = box.labelMode || 'RC';
+    // Click outside to close
+    el.labelModalOverlay.addEventListener('click', (e) => {
+      if (e.target === el.labelModalOverlay) closeLabelModal();
+    });
 
-        if (mode === 'A1') {
-            const m = t.match(/^([A-Za-z])\s*(\d+)$/);
-            if (!m) return null;
-            const rowChar = m[1].toUpperCase();
-            const col = parseInt(m[2], 10);
-            const row = rowChar.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-            if (row < 1 || row > box.rows || col < 1 || col > box.cols) return null;
-            return `${row}-${col}`;
-        }
+    // Enter to save / Esc to cancel
+    el.labelInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveLabelFromModal('save');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeLabelModal();
+      }
+    });
 
-        if (mode === 'LINEAR') {
-            const idx = parseInt(t, 10);
-            if (!Number.isFinite(idx) || idx < 1 || idx > box.rows * box.cols) return null;
-            const row = Math.floor((idx - 1) / box.cols) + 1;
-            const col = ((idx - 1) % box.cols) + 1;
-            return `${row}-${col}`;
-        }
 
-        // RC fallback
-        if (/^\d+\s*-\s*\d+$/.test(t)) {
-            const [r, c] = t.split('-').map(s => parseInt(s.trim(), 10));
-            if (r < 1 || r > box.rows || c < 1 || c > box.cols) return null;
-            return `${r}-${c}`;
-        }
-        return null;
-    }
+    // Toggle settings panel
+    el.btnToggleSettings.addEventListener('click', () => {
+      const isOpen = el.boxSettings.style.display !== 'none';
+      el.boxSettings.style.display = isOpen ? 'none' : 'block';
+    });
 
-    function renderBoxSettings() {
-        const wrap = document.getElementById('box-settings');
-        if (!wrap) return;
-        if (!currentBoxId || !db.boxes[currentBoxId]) { wrap.style.display = 'none'; const btn = document.getElementById('btn-toggle-settings'); if (btn) btn.style.display = 'none'; return; }
-        const box = db.boxes[currentBoxId];
-        wrap.style.display = 'none';
-        const btn = document.getElementById('btn-toggle-settings');
-        if (btn) { btn.style.display = 'inline-flex'; btn.innerText = '⚙️ 容器设置'; }
-        document.getElementById('label-mode').value = box.labelMode || 'A1';
-    }
+    el.labelMode.addEventListener('change', applyLabelMode);
+    el.btnClearLabels.addEventListener('click', clearCustomLabels);
 
-    
-    function toggleBoxSettings(force) {
-        const panel = document.getElementById('box-settings');
-        if (!panel) return;
-        const btn = document.getElementById('btn-toggle-settings');
-        const wantShow = (typeof force === 'boolean') ? force : (panel.style.display === 'none');
-        panel.style.display = wantShow ? 'block' : 'none';
-        if (btn) btn.innerText = wantShow ? '✖ 关闭设置' : '⚙️ 容器设置';
-        // 让网格不会被设置面板撑开太多：设置打开时把面板放在上方即可
-    }
+    // Grid delegation: click select / shift-click label
+    el.grid.addEventListener('click', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell) return;
+      const pos = cell.dataset.pos;
+      if (e.shiftKey) return setCustomLabelForPos(pos);
+      toggleSelect(pos);
+    });
 
-function applyLabelMode() {
-        if (!currentBoxId) return;
-        const box = db.boxes[currentBoxId];
-        box.labelMode = document.getElementById('label-mode').value;
-        save(); 
-        renderGrid();
-    }
 
-    function clearAllCustomLabels() {
-        if (!currentBoxId) return;
-        const box = db.boxes[currentBoxId];
-        if (!box.customLabels || Object.keys(box.customLabels).length === 0) return;
-        if (!confirm('确定要清空当前容器所有自定义标签吗？（样本数据不受影响）')) return;
-        box.customLabels = {};
-        save(); renderGrid(); renderBoxSettings();
-    }
 
-    function renderGrid() {
-        const grid = document.getElementById('grid'); grid.innerHTML = '';
-        if (!currentBoxId) return;
-        const box = db.boxes[currentBoxId];
-        // 根据容器列数动态设置网格布局
-        grid.style.gridTemplateColumns = `repeat(${box.cols}, 48px)`;
+    // Rename box modal events
+    el.renameBoxCancel.addEventListener('click', closeRenameBoxModal);
+    el.renameBoxConfirm.addEventListener('click', confirmRenameBoxFromModal);
 
-        // 双重循环渲染所有格子
-        for (let r = 1; r <= box.rows; r++) {
-            for (let c = 1; c <= box.cols; c++) {
-                const pos = `${r}-${c}`;
-                const v = box.vials[pos];
-                const el = document.createElement('div');
-                el.id = `cell-${pos}`;
-                el.className = 'cell';
+    el.renameBoxModalOverlay.addEventListener('click', (e) => {
+      if (e.target === el.renameBoxModalOverlay) closeRenameBoxModal();
+    });
 
-                if (v && v.name) {
-                    // 渲染已占用格子
-                    el.classList.add('occupied'); 
-                    el.style.backgroundColor = stringToHslColor(v.name); // 应用动态颜色
-                    const label = posToLabel(pos, box);
-                    el.title = `位置: ${label} (${pos})\n名称: ${v.name}\n代数: ${v.p || '-'}\n日期: ${v.date || '-'}`; // 悬停提示
-                    el.innerHTML = `<strong style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; text-align:left;">${v.name}</strong><span style="font-size:8px; opacity:0.8">${v.p || ''}</span>`;
-                    // 启用拖拽起始
-                    el.setAttribute('draggable', 'true');
-                    el.addEventListener('dragstart', (e) => handleDragStart(e, pos)); 
-                    el.addEventListener('dragend', handleDragEnd);
-                } else {
-                    // 渲染空格子
-                    el.innerText = posToLabel(pos, box);
-                    // 启用拖拽放置目标
-                    el.addEventListener('dragover', handleDragOver);
-                    el.addEventListener('dragenter', function() { this.classList.add('drag-over'); });
-                    el.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
-                    el.addEventListener('drop', (e) => handleDrop(e, pos));
-                }
+    el.renameBoxNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmRenameBoxFromModal();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeRenameBoxModal();
+      }
+    });
 
-                // 应用选中和高亮状态
-                if (selectedPositions.has(pos)) el.classList.add('selected');
-                if (searchHighlightPos === pos) el.classList.add('highlight-target');
-                
-                // 点击事件处理
-                el.addEventListener('click', (e) => {
-                    searchHighlightPos = null;
-                    // Shift+点击：设置该格的自定义标签覆盖
-                    if (e.shiftKey) {
-                        const current = (box.customLabels && box.customLabels[pos]) || posToLabel(pos, box);
-                        const next = prompt(`为该格设置显示标签（留空=取消自定义覆盖）\n内部位置键仍为 ${pos}`, current);
-                        if (next === null) return;
-                        box.customLabels = box.customLabels || {};
-                        if (next.trim() === '') delete box.customLabels[pos];
-                        else box.customLabels[pos] = next.trim();
-                        save(); renderGrid(); renderBoxSettings();
-                        return;
-                    }
-                    toggleSelect(pos);
-                });
-                grid.appendChild(el);
-            }
-        }
-    }
 
-    // ========= 辅助功能模块：颜色生成 =========
-    // 根据字符串生成唯一的柔和 HSL 颜色
-    function stringToHslColor(str) { 
-        let hash = 0; 
-        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); 
-        return `hsl(${hash % 360}, 60%, 88%)`; 
-    }
+    // Drag & drop delegation
+    el.grid.addEventListener('dragstart', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell) return;
+      const pos = cell.dataset.pos;
+      const box = state.db.boxes[state.currentBoxId];
+      if (!box || !box.vials[pos]) return;
+      e.dataTransfer.setData('text/plain', pos);
+      e.dataTransfer.effectAllowed = 'move';
+      cell.classList.add('dragging');
+    });
 
-    // ========= 辅助功能模块：拖拽逻辑 (Drag & Drop) =========
-    function handleDragStart(e, pos) { 
-        draggedItemPos = pos; 
-        e.dataTransfer.effectAllowed = 'move'; 
-        e.target.style.opacity = '0.5'; 
-    }
-    function handleDragEnd(e) { 
-        e.target.style.opacity = '1'; 
-        document.querySelectorAll('.cell').forEach(el => el.classList.remove('drag-over')); 
-    }
-    function handleDragOver(e) { 
-        e.preventDefault(); 
-        e.dataTransfer.dropEffect = 'move'; 
-        return false; 
-    }
-    function handleDrop(e, targetPos) { 
-        e.stopPropagation(); 
-        if (draggedItemPos === targetPos) return; 
-        const box = db.boxes[currentBoxId]; 
-        if (box.vials[targetPos]) { alert("无法移动：目标位置已有样本。请先清空目标位置。"); return; } 
-        // 执行移动操作
-        box.vials[targetPos] = box.vials[draggedItemPos]; 
-        delete box.vials[draggedItemPos]; 
-        save(); renderGrid(); 
-        // 如果移动的是选中的格子，清理选中状态
-        if (selectedPositions.has(draggedItemPos)) { selectedPositions.clear(); updatePanel(); } 
-    }
+    el.grid.addEventListener('dragend', (e) => {
+      const cell = e.target.closest('.cell');
+      if (cell) cell.classList.remove('dragging');
+    });
 
-    // ========= 辅助功能模块：面板交互与数据更新 =========
-    function toggleSelect(pos) { 
-        if (selectedPositions.has(pos)) selectedPositions.delete(pos); 
-        else selectedPositions.add(pos); 
-        renderGrid(); updatePanel(); 
-    }
-    function updatePanel() {
-        document.getElementById('sel-count').innerText = selectedPositions.size;
-        // 如果仅选中一个，回显其数据
-        if (selectedPositions.size === 1) {
-            const pos = Array.from(selectedPositions)[0];
-            const data = db.boxes[currentBoxId].vials[pos] || {};
-            document.getElementById('cell-name').value = data.name || '';
-            document.getElementById('cell-p').value = data.p || '';
-            document.getElementById('cell-date').value = data.date || '';
-        }
-        updateLiveStats();
-    }
-    // 实时计算全库存量并触发预警样式
-    function updateLiveStats() {
-        const name = document.getElementById('cell-name').value.trim().toLowerCase();
-        const totalSpan = document.getElementById('total-inventory');
-        const statsArea = document.getElementById('stats-area');
-        if (!name) { totalSpan.innerText = '0'; statsArea.classList.remove('stats-danger'); return; }
-        let count = 0;
-        Object.values(db.boxes).forEach(b => {
-            Object.values(b.vials).forEach(v => { if (v.name && v.name.toLowerCase() === name) count++; });
-        });
-        totalSpan.innerText = count;
-        if (count > 0 && count <= 3) statsArea.classList.add('stats-danger'); else statsArea.classList.remove('stats-danger');
-    }
-    
-    // ========= 核心业务逻辑：数据存取 (入库/出库) =========
-    function saveBatch() {
-        if (!currentBoxId || selectedPositions.size === 0) return alert("请先选择格子");
-        const name = document.getElementById('cell-name').value.trim(); if (!name) return alert("细胞名称必填");
-        const data = { name, p: document.getElementById('cell-p').value, date: document.getElementById('cell-date').value };
-        selectedPositions.forEach(pos => db.boxes[currentBoxId].vials[pos] = {...data});
-        selectedPositions.clear(); // 保存后自动取消选择
-        save(); renderGrid(); updatePanel(); updateWarningBoard();
-    }
-    function clearBatch() {
-        if (!selectedPositions.size || !confirm("确定要清空所选位置吗？(出库动作)")) return;
-        selectedPositions.forEach(pos => delete db.boxes[currentBoxId].vials[pos]);
-        selectedPositions.clear(); // 出库后自动取消选择
-        save(); renderGrid(); updatePanel(); updateWarningBoard();
-    }
+    el.grid.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
 
-    // ========= 辅助功能模块：全局搜索与预警 =========
-    function handleGlobalSearch() {
-        const term = document.getElementById('global-search').value.toLowerCase().trim();
-        const dropdown = document.getElementById('search-dropdown');
-        if (!term) { dropdown.style.display = 'none'; return; }
-        let matches = [];
-        Object.keys(db.boxes).forEach(boxId => {
-            const box = db.boxes[boxId];
-            Object.keys(box.vials).forEach(pos => {
-                const v = box.vials[pos];
-                if (v.name.toLowerCase().includes(term)) matches.push({ boxId, boxName: box.name, pos, label: posToLabel(pos, box), name: v.name, p: v.p });
-            });
-        });
-        dropdown.innerHTML = matches.length ? matches.map(m => `
-            <div class="search-item" onclick="jumpToVial('${m.boxId}', '${m.pos}')">
-                <div><strong>${m.name}</strong> <small style="color:#888">(${m.p||'-'})</small></div>
-                <div class="loc-tag">${m.boxName} [${m.pos}]</div>
-            </div>`).join('') : '<div style="padding:15px; color:#999;">未找到匹配样本</div>';
-        dropdown.style.display = 'block';
-    }
-    // 跳转并高亮目标格子
-    function jumpToVial(boxId, pos) {
-        document.getElementById('search-dropdown').style.display = 'none';
-        document.getElementById('global-search').value = '';
-        searchHighlightPos = pos; switchBox(boxId);
-        setTimeout(() => { const el = document.getElementById(`cell-${pos}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
-    }
-    // 更新全局低库存预警看板
-    function updateWarningBoard() {
-        const board = document.getElementById('global-warning-list');
-        let counts = {};
-        Object.values(db.boxes).forEach(b => Object.values(b.vials).forEach(v => { if (v.name) counts[v.name] = (counts[v.name] || 0) + 1; }));
-        const lows = Object.keys(counts).filter(n => counts[n] <= 3);
-        board.innerHTML = lows.length ? lows.map(n => `
-            <div style="padding:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-                <span>${n}</span><b style="color:var(--danger)">余${counts[n]}</b>
-            </div>`).join('') : '<div style="color:#ccc; text-align:center;">✅ 库存充足</div>';
-    }
+    el.grid.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const toCell = e.target.closest('.cell');
+      if (!toCell) return;
+      const fromPos = e.dataTransfer.getData('text/plain');
+      const toPos = toCell.dataset.pos;
+      if (!fromPos || !toPos || fromPos === toPos) return;
+      moveVial(fromPos, toPos);
+    });
 
-    // ========= 数据持久化与导入导出 =========
-    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
-    
-    function exportDB() {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type: 'application/json'}));
-        a.download = `Cell_Storage_Backup_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-    }
-    
-    function triggerImport() { document.getElementById('import-file').click(); }
-    
-    function importDB(e) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            try {
-                const data = JSON.parse(ev.target.result);
-                if (data.boxes) { db = data; init(); save(); alert("数据导入成功！"); }
-                else alert("文件格式错误，非有效的备份文件。");
-            } catch (err) { alert("导入失败，文件可能已损坏。"); }
-        };
-        reader.readAsText(e.target.files[0]);
-        e.target.value = ''; // 重置 input file 以便下次重复导入同一文件
-    }
+    // Batch operations
+    el.btnSaveBatch.addEventListener('click', batchSave);
+    el.btnClearBatch.addEventListener('click', batchClear);
 
-    // 点击外部关闭搜索下拉框
-    document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrapper')) document.getElementById('search-dropdown').style.display = 'none'; });
-    
-    // 启动应用
+    // Stats react
+    el.cellName.addEventListener('input', () => updateLiveStats());
+
+    // Search
+    el.globalSearch.addEventListener('input', () => {
+      const matches = searchAll(el.globalSearch.value);
+      renderSearchDropdown(matches);
+    });
+
+
+    el.globalSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        el.globalSearch.value = '';
+        renderSearchDropdown([]);
+        clearSearchHighlight();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!el.searchDropdown.contains(e.target) && e.target !== el.globalSearch) {
+        // auto clear search when clicking elsewhere
+        el.searchDropdown.style.display = 'none';
+        if (el.globalSearch.value.trim()) el.globalSearch.value = '';
+      }
+    });
+
+    el.searchDropdown.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-action="jump-search"]');
+      if (!item) return;
+      jumpToSearchIndex(parseInt(item.dataset.idx, 10));
+    });
+
+    // Export / Import
+    el.btnExport.addEventListener('click', exportDB);
+    el.btnImport.addEventListener('click', () => el.importFile.click());
+    el.importFile.addEventListener('change', () => {
+      const file = el.importFile.files && el.importFile.files[0];
+      if (!file) return;
+      importDBFromFile(file);
+      el.importFile.value = '';
+    });
+
+    // Undo hotkey
+    document.addEventListener('keydown', (e) => {
+      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        applyUndo();
+      }
+    });
+  }
+
+  function toggleCustomSpecFields() {
+    const isCustom = el.newBoxSpecs.value === 'custom';
+    el.customSpecFields.style.display = isCustom ? 'block' : 'none';
+  }
+
+  // =========================
+  // Init
+  // =========================
+  function init() {
+    cacheDom();
+    loadDB();
+
+    const ids = Object.keys(state.db.boxes);
+    state.currentBoxId = ids.length ? ids[0] : null;
+    if (state.currentBoxId) el.labelMode.value = state.db.boxes[state.currentBoxId].labelMode;
+
+    bindEvents();
     toggleCustomSpecFields();
-    init();
+    renderAll();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
 </script>
+
+<!-- ========= 新建容器：命名模态框 ========= -->
+<div id="newbox-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="newbox-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">📦</div>
+      <div>
+        <div id="newbox-modal-title" class="modal-title">新建容器</div>
+        <div id="newbox-modal-sub" class="modal-sub">为新容器设置名称。规格将按你在左侧选择的行×列创建。</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <label for="newbox-name-input">容器名称</label>
+      <input id="newbox-name-input" type="text" placeholder="例如：HEK293T-1号盒" autocomplete="off">
+      <div id="newbox-modal-hint" class="modal-hint"></div>
+      <div id="newbox-modal-error" class="modal-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal" id="newbox-cancel">取消</button>
+      <button class="btn-modal btn-modal-primary" id="newbox-confirm">创建</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========= 自定义标签：模态框 ========= -->
+<div id="label-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="label-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">🏷️</div>
+      <div>
+        <div id="label-modal-title" class="modal-title">设置自定义标签</div>
+        <div id="label-modal-sub" class="modal-sub">为该位置设置一个更直观的标签（留空可清除）。</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="label-modal-hint" class="modal-hint"></div>
+      <label for="label-input">标签内容</label>
+      <input id="label-input" type="text" placeholder="例如：母管 / 对照组 / 批次A" autocomplete="off">
+      <div id="label-modal-error" class="modal-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal" id="label-cancel">取消</button>
+      <button class="btn-modal" id="label-clear">清除</button>
+      <button class="btn-modal btn-modal-primary" id="label-confirm">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========= 重命名容器：模态框 ========= -->
+<div id="renamebox-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="renamebox-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">✏️</div>
+      <div>
+        <div id="renamebox-modal-title" class="modal-title">重命名容器</div>
+        <div id="renamebox-modal-sub" class="modal-sub">修改容器名称，不影响容器内容与位置数据。</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <label for="renamebox-name-input">容器名称</label>
+      <input id="renamebox-name-input" type="text" placeholder="请输入容器名称" autocomplete="off">
+      <div id="renamebox-modal-hint" class="modal-hint"></div>
+      <div id="renamebox-modal-error" class="modal-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal" id="renamebox-cancel">取消</button>
+      <button class="btn-modal btn-modal-primary" id="renamebox-confirm">保存</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
