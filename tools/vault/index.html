@@ -1,0 +1,1538 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>离线密码库</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --card:#121a2a; --card2:#0f1626; --text:#e8eefc; --muted:#9fb0d1;
+      --line:#23304a; --accent:#5aa7ff; --danger:#ff5a7a; --ok:#5cffb3;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); background: radial-gradient(1200px 700px at 20% 0%, rgba(90,167,255,.18), transparent 55%),
+        radial-gradient(900px 600px at 100% 20%, rgba(92,255,179,.12), transparent 60%), var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1200px; margin:0 auto; padding:24px;}
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;
+    }
+    .brand{display:flex; align-items:center; gap:12px;}
+    .logo{
+      width:40px; height:40px; border-radius:14px;
+      background: linear-gradient(135deg, rgba(90,167,255,.9), rgba(92,255,179,.75));
+      box-shadow: var(--shadow);
+    }
+    h1{font-size:18px; margin:0;}
+    .subtitle{font-size:12px; color:var(--muted); margin-top:2px;}
+    .row{display:flex; gap:16px;}
+    .col{background:rgba(18,26,42,.9); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);}
+    .left{width:280px; padding:14px;}
+    .mid{flex:1; min-width:360px;}
+    .right{width:420px; padding:14px;}
+    @media (max-width: 1100px){
+      .row{flex-direction:column;}
+      .left,.right{width:auto;}
+    }
+
+    .sectionTitle{font-size:12px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin:10px 0 8px;}
+    .btn{
+      appearance:none; border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--text);
+      padding:10px 12px; border-radius:12px; cursor:pointer; transition:.15s; font-weight:600;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{transform:translateY(-1px); border-color:rgba(90,167,255,.55);}
+    .btn.primary{background:rgba(90,167,255,.18); border-color:rgba(90,167,255,.4);}
+    .btn.danger{background:rgba(255,90,122,.14); border-color:rgba(255,90,122,.35);}
+    .btn.ok{background:rgba(92,255,179,.12); border-color:rgba(92,255,179,.35);}
+    .btn.small{padding:8px 10px; border-radius:10px; font-size:12px;}
+    .btn.block{width:100%; justify-content:center;}
+    .btn:disabled{opacity:.5; cursor:not-allowed; transform:none;}
+
+    .input, .select, .textarea{
+      width:100%; background:rgba(15,22,38,.8); color:var(--text);
+      border:1px solid var(--line); border-radius:12px; padding:10px 12px; outline:none;
+    }
+    .input:focus, .select:focus, .textarea:focus{border-color:rgba(90,167,255,.6); box-shadow:0 0 0 3px rgba(90,167,255,.12);}
+    .textarea{min-height:110px; resize:vertical;}
+    .muted{color:var(--muted); font-size:12px; line-height:1.45;}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border:1px solid var(--line); border-radius:999px;
+      background:rgba(255,255,255,.03); font-size:12px; color:var(--muted);
+    }
+    .kpi{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
+    .kpi .pill b{color:var(--text); font-weight:800;}
+    .divider{height:1px; background:var(--line); margin:12px 0;}
+
+    .midHeader{padding:14px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; justify-content:space-between;}
+    .midHeader .search{flex:1; display:flex; gap:10px; align-items:center;}
+    .list{max-height:520px; overflow:auto;}
+    .item{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 14px; border-bottom:1px solid rgba(35,48,74,.65);
+      cursor:pointer; transition:.12s;
+    }
+    .item:hover{background:rgba(255,255,255,.03);}
+    .item.active{background:rgba(90,167,255,.10); border-bottom-color:rgba(90,167,255,.25);}
+    .itemTitle{font-weight:800; font-size:14px;}
+    .itemSub{font-size:12px; color:var(--muted); margin-top:3px;}
+    .tagline{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+    .tag{
+      font-size:11px; color:rgba(232,238,252,.9);
+      padding:4px 8px; border-radius:999px; border:1px solid rgba(35,48,74,.8);
+      background:rgba(255,255,255,.03);
+    }
+
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    @media(max-width:520px){.grid2{grid-template-columns:1fr;}}
+    .fieldLabel{font-size:12px; color:var(--muted); margin:10px 0 6px;}
+    .mono{font-family:var(--mono);}
+
+    .toast{
+      position:fixed; right:18px; bottom:18px; z-index:9999;
+      background:rgba(18,26,42,.92); border:1px solid var(--line);
+      padding:10px 12px; border-radius:12px; box-shadow:var(--shadow);
+      min-width:240px; display:none;
+    }
+    .toast.show{display:block; animation: pop .16s ease-out;}
+    @keyframes pop{from{transform:translateY(8px); opacity:.0} to{transform:translateY(0); opacity:1}}
+    .toast .t{font-weight:800; margin-bottom:2px;}
+    .toast .d{font-size:12px; color:var(--muted);}
+
+    /* Lock modal */
+    .overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; padding:18px; z-index:9998;
+    }
+    .overlay.show{display:flex;}
+    .modal{
+      width:min(560px, 100%); background:rgba(18,26,42,.96); border:1px solid var(--line);
+      border-radius:20px; box-shadow:var(--shadow); padding:18px;
+    }
+    .modal h2{margin:0; font-size:16px;}
+    .modal .muted{margin-top:6px;}
+    .modal .actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+    .hint{
+      margin-top:10px; padding:10px 12px; border-radius:14px;
+      background:rgba(255,255,255,.03); border:1px dashed rgba(35,48,74,.9);
+      font-size:12px; color:var(--muted); line-height:1.5;
+    }
+    .dangerText{color:rgba(255,90,122,.95); font-weight:800;}
+    a{color:var(--accent)}
+
+    /* ✅ 更可靠的“隐藏密码”方式：不切换 input type，而是用 CSS 进行掩码 */
+    .masked{
+      -webkit-text-security: disc; /* Chrome/Edge/Safari */
+      /* Firefox 没有标准 text-security；至少不会阻止显示逻辑 */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>离线密码库（单文件）</h1>
+          <div class="subtitle">本地 IndexedDB 存储 · AES-GCM 加密 · PBKDF2 派生 · 导入/导出加密容器</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+        <span class="pill" id="sessionPill">🔒 未解锁</span>
+        <button class="btn small" id="btnLock">锁定</button>
+        <button class="btn small" id="btnExport">导出（加密）</button>
+        <button class="btn small" id="btnImport">导入（加密）</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Left -->
+      <div class="col left">
+        <div class="sectionTitle">过滤</div>
+        <div class="fieldLabel">类型</div>
+        <select class="select" id="filterType">
+          <option value="">全部</option>
+        </select>
+
+        <div class="fieldLabel">标签（逗号分隔）</div>
+        <input class="input" id="filterTags" placeholder="例如：工作,服务器" />
+
+        <div class="divider"></div>
+
+        <div class="sectionTitle">常用操作</div>
+        <button class="btn primary block" id="btnNew">➕ 新建条目</button>
+        <button class="btn block" id="btnGenerate">🎲 生成密码</button>
+
+        <div class="hint">
+          <div><b>安全提示</b></div>
+          <ul style="margin:8px 0 0 16px; padding:0;">
+            <li>建议离线使用，不引入第三方 CDN。</li>
+            <li>主密码不可找回；忘记即无法解密。</li>
+            <li>导出文件建议另行备份，并注意泄露风险（虽然是加密的）。</li>
+          </ul>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="sectionTitle">统计</div>
+        <div class="kpi">
+          <span class="pill">条目数：<b id="kpiCount">0</b></span>
+          <span class="pill">类型数：<b id="kpiTypes">0</b></span>
+          <span class="pill">已锁定：<b id="kpiLocked">是</b></span>
+        </div>
+      </div>
+
+      <!-- Mid -->
+      <div class="col mid">
+        <div class="midHeader">
+          <div class="search">
+            <input class="input" id="search" placeholder="搜索：标题 / 账号 / URL / 标签 / 备注" />
+          </div>
+          <button class="btn small ok" id="btnRefresh">↻ 刷新</button>
+        </div>
+        <div class="list" id="list"></div>
+      </div>
+
+      <!-- Right -->
+      <div class="col right">
+        <div class="sectionTitle">详情 / 编辑</div>
+
+        <div class="grid2">
+          <div>
+            <div class="fieldLabel">类型</div>
+            <select class="select" id="fType"></select>
+          </div>
+          <div>
+            <div class="fieldLabel">标题</div>
+            <input class="input" id="fTitle" placeholder="例如：GitHub - 工作号" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="fieldLabel">账号/用户名</div>
+            <input class="input mono" id="fUsername" placeholder="email / username" />
+          </div>
+          <div>
+            <div class="fieldLabel">URL / Host</div>
+            <input class="input mono" id="fUrl" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="fieldLabel">标签（逗号分隔）</div>
+        <input class="input" id="fTags" placeholder="工作,个人,服务器..." />
+
+        
+
+        <div class="sectionTitle" style="margin-top:12px;">绑定信息（可选）</div>
+        <div class="grid2">
+          <div>
+            <div class="fieldLabel">绑定邮箱</div>
+            <input class="input mono" id="fBindEmail" placeholder="name@example.com" />
+          </div>
+          <div>
+            <div class="fieldLabel">绑定手机号</div>
+            <input class="input mono" id="fBindPhone" placeholder="+86 1XXXXXXXXXX" />
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <div class="fieldLabel">绑定微信</div>
+            <input class="input mono" id="fBindWechat" placeholder="WeChat ID" />
+          </div>
+          <div>
+            <div class="fieldLabel">绑定 QQ</div>
+            <input class="input mono" id="fBindQQ" placeholder="QQ 号" />
+          </div>
+        </div>
+
+        <div class="sectionTitle" style="margin-top:12px;">会员（可选）</div>
+        <div class="grid2">
+          <div>
+            <div class="fieldLabel">会员到期日期</div>
+            <input class="input mono" id="fMemberExpire" type="date" />
+          </div>
+          <div>
+            <div class="fieldLabel">会员备注</div>
+            <input class="input" id="fMemberNote" placeholder="例如：Pro / 年费 / 家庭组 / 订阅渠道" />
+          </div>
+        </div>
+
+<div class="fieldLabel">密码 / 密钥</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <!-- ✅ 改为 type=text + CSS 掩码，更稳定 -->
+          <input class="input mono masked" id="fSecret" type="text" placeholder="点击右侧按钮显示/复制" />
+          <button class="btn small" id="btnToggleSecret">👁 显示</button>
+          <button class="btn small" id="btnCopyUser">复制账号</button>
+          <button class="btn small" id="btnCopySecret">复制密码</button>
+        </div>
+        <div class="muted" id="secretTimer" style="margin-top:6px; display:none;">密码将于 <b id="secretCountdown">15</b>s 后自动隐藏</div>
+
+        <div class="fieldLabel">备注</div>
+        <textarea class="textarea" id="fNotes" placeholder="例如：恢复码位置 / 注册手机号尾号 / 安全问题提示（不建议写答案）"></textarea>
+
+        <div class="divider"></div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn primary" id="btnSave">💾 保存</button>
+          <button class="btn" id="btnCancel">取消</button>
+          <button class="btn danger" id="btnDelete">🗑 删除</button>
+        </div>
+
+        <div class="hint" style="margin-top:12px;">
+          <div><b>复制剪贴板建议</b></div>
+          <div class="muted">复制后尽快粘贴到可信窗口。部分浏览器/系统可能无法自动清空剪贴板，这属于平台限制。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <div class="t" id="toastTitle">提示</div>
+    <div class="d" id="toastDesc"></div>
+  </div>
+
+  <!-- Lock/Setup Modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modalTitle">解锁密码库</h2>
+      <div class="muted" id="modalDesc">输入主密码以解锁。本工具会用 PBKDF2 派生密钥并在本地解密数据。</div>
+
+      <div class="divider"></div>
+
+      <div class="fieldLabel">主密码</div>
+      <input class="input mono" id="masterPassword" type="password" placeholder="主密码（不会上传网络）" />
+
+      <div id="setupArea" style="display:none;">
+        <div class="fieldLabel">确认主密码</div>
+        <input class="input mono" id="masterPassword2" type="password" placeholder="再次输入主密码" />
+        <div class="hint">
+          首次使用将创建一个新的加密密码库。<span class="dangerText">主密码不可恢复</span>：忘记后无法解密历史数据。
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnUnlock">解锁</button>
+        <button class="btn ok" id="btnSetup">创建新库</button>
+        <button class="btn" id="btnCloseModal">关闭</button>
+      </div>
+
+      <div class="hint">
+        <b>自动锁定</b>：默认闲置 <span class="mono">5 分钟</span> 自动锁定（可在代码里改）。
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept=".vault,.json,application/json" style="display:none;" />
+
+<script>
+(() => {
+
+  /* =============================================================
+     离线密码库 1.0 版本（详细注释版）
+     -------------------------------------------------------------
+     架构说明：
+       - 存储层：IndexedDB
+       - 加密层：WebCrypto (PBKDF2 + AES-GCM)
+       - 主密码仅用于派生 masterKey
+       - vaultKey 独立存在，用于实际数据加密
+       - 列表缓存不含 secret/notes（降低内存风险）
+
+     安全注意：
+       - 浏览器环境无法保证内存绝对安全
+       - 解锁期间数据在内存中可被调试工具访问
+       - 请自行妥善备份导出文件
+     ============================================================= */
+  // =============================================================
+  // 常量与安全配置区
+  // =============================================================
+  // 说明：
+  //   所有密码学参数与系统行为参数集中在此，
+  //   若未来升级算法或调整安全策略，应优先修改此处。
+  // ---------------------------
+  // Constants / Config
+  // ---------------------------
+  const DB_NAME = "offline_vault_db";
+  const DB_VERSION = 1;
+  const STORE_META = "meta";
+  const STORE_ITEMS = "items";
+
+  const KDF_ITERATIONS = 310000; // PBKDF2 iterations (stored in meta; constant is fallback)
+  const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+  const SECRET_SHOW_SECONDS = 15;
+
+  // Import safety limits (UX + DoS guard)
+  const IMPORT_MAX_BYTES = 20 * 1024 * 1024;      // 20MB hard limit
+  const IMPORT_SOFT_MAX_ITEMS = 10000;            // ask for confirm beyond this
+
+  const ITEM_TYPES = [
+    "网站账号", "邮箱", "服务器/SSH", "API Key", "数据库", "Wi-Fi", "软件 License", "银行卡/金融", "其他"
+  ];
+
+  // =============================================================
+  // 运行时状态管理
+  // =============================================================
+  // 说明：
+  //   本区变量全部为内存态数据。
+  //   锁定时会主动清除 key 与缓存引用，
+  //   以降低明文长期驻留风险。
+  // ---------------------------
+  // State
+  // ---------------------------
+  let db = null;
+  let unlocked = false;
+  let masterKey = null;
+  let vaultKey = null;
+  let vaultMeta = null;
+
+  // ✅ Cache ONLY non-sensitive index fields for listing/filtering/searching
+  // {id,type,title,username,url,tags,createdAt,updatedAt}
+  let itemsCache = [];
+
+  // Active selection
+  let activeId = null;
+
+  // Full decrypted item for the active row only (contains secret/notes)
+  let activeItemFull = null;
+
+  // idle lock
+  let idleTimer = null;
+
+  // secret show timer
+  let secretTimerHandle = null;
+  let secretCountdownHandle = null;
+  let remainingSecretSeconds = SECRET_SHOW_SECONDS;
+
+  // Browser support: CSS masking vs password type
+  const supportsTextSecurity = (() => {
+
+  /* =============================================================
+     离线密码库 1.0 版本（详细注释版）
+     -------------------------------------------------------------
+     架构说明：
+       - 存储层：IndexedDB
+       - 加密层：WebCrypto (PBKDF2 + AES-GCM)
+       - 主密码仅用于派生 masterKey
+       - vaultKey 独立存在，用于实际数据加密
+       - 列表缓存不含 secret/notes（降低内存风险）
+
+     安全注意：
+       - 浏览器环境无法保证内存绝对安全
+       - 解锁期间数据在内存中可被调试工具访问
+       - 请自行妥善备份导出文件
+     ============================================================= */
+    try{
+      return !!(window.CSS && CSS.supports && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")));
+    }catch{ return false; }
+  })();
+
+  // ---------------------------
+  // UI helpers
+  // ---------------------------
+  const $ = (id) => document.getElementById(id);
+  const toast = (title, desc="") => {
+    $("toastTitle").textContent = title;
+    $("toastDesc").textContent = desc;
+    $("toast").classList.add("show");
+    setTimeout(()=> $("toast").classList.remove("show"), 2400);
+  };
+
+  const formatDate = (ts) => {
+    try{
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }catch{ return ""; }
+  };
+
+
+  const formatDateShort = (ymd) => {
+    if (!ymd) return "";
+    return ymd; // "YYYY-MM-DD"
+  };
+
+  const expiryStatus = (ymd) => {
+    if (!ymd) return null;
+    const t = Date.parse(ymd + "T00:00:00");
+    if (!Number.isFinite(t)) return null;
+    const today = new Date();
+    const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const diffDays = Math.floor((t - today0) / 86400000);
+    if (diffDays < 0) return { kind: "expired", diffDays };
+    if (diffDays <= 30) return { kind: "soon", diffDays };
+    return { kind: "ok", diffDays };
+  };
+
+  const normalizeTags = (s) => (s || "")
+    .split(",")
+    .map(x => x.trim())
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  const now = () => Date.now();
+
+  const resetIdleTimer = () => {
+    if (!unlocked) return;
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+
+  /* =============================================================
+     离线密码库 1.0 版本（详细注释版）
+     -------------------------------------------------------------
+     架构说明：
+       - 存储层：IndexedDB
+       - 加密层：WebCrypto (PBKDF2 + AES-GCM)
+       - 主密码仅用于派生 masterKey
+       - vaultKey 独立存在，用于实际数据加密
+       - 列表缓存不含 secret/notes（降低内存风险）
+
+     安全注意：
+       - 浏览器环境无法保证内存绝对安全
+       - 解锁期间数据在内存中可被调试工具访问
+       - 请自行妥善备份导出文件
+     ============================================================= */
+      lockVault("闲置超时自动锁定");
+    }, AUTO_LOCK_MS);
+    updateSessionPill();
+  };
+
+  const updateSessionPill = () => {
+    if (!unlocked) {
+      $("sessionPill").textContent = "🔒 未解锁";
+      $("kpiLocked").textContent = "是";
+      return;
+    }
+    $("sessionPill").textContent = "🔓 已解锁（闲置自动锁定）";
+    $("kpiLocked").textContent = "否";
+  };
+
+  // ✅ Unified secret masking behavior:
+  // - If CSS text-security supported: keep type=text and toggle .masked
+  // - Else (e.g. Firefox): toggle input type between password/text
+  const hideSecret = () => {
+    const el = $("fSecret");
+    if (supportsTextSecurity) {
+      el.type = "text";
+      el.classList.add("masked");
+    } else {
+      el.classList.remove("masked");
+      el.type = "password";
+    }
+    $("btnToggleSecret").textContent = "👁 显示";
+    $("secretTimer").style.display = "none";
+  };
+
+  const showSecret = () => {
+    const el = $("fSecret");
+    if (supportsTextSecurity) {
+      el.type = "text";
+      el.classList.remove("masked");
+    } else {
+      el.classList.remove("masked");
+      el.type = "text";
+    }
+    $("btnToggleSecret").textContent = "🙈 隐藏";
+    startSecretAutoHide();
+  };
+
+  const clearSecretTimers = () => {
+    if (secretTimerHandle) clearTimeout(secretTimerHandle);
+    if (secretCountdownHandle) clearInterval(secretCountdownHandle);
+    secretTimerHandle = null;
+    secretCountdownHandle = null;
+    remainingSecretSeconds = SECRET_SHOW_SECONDS;
+    hideSecret();
+  };
+
+  const startSecretAutoHide = () => {
+    if (secretTimerHandle) clearTimeout(secretTimerHandle);
+    if (secretCountdownHandle) clearInterval(secretCountdownHandle);
+
+    remainingSecretSeconds = SECRET_SHOW_SECONDS;
+    $("secretTimer").style.display = "block";
+    $("secretCountdown").textContent = String(remainingSecretSeconds);
+
+    secretCountdownHandle = setInterval(() => {
+
+  /* =============================================================
+     离线密码库 1.0 版本（详细注释版）
+     -------------------------------------------------------------
+     架构说明：
+       - 存储层：IndexedDB
+       - 加密层：WebCrypto (PBKDF2 + AES-GCM)
+       - 主密码仅用于派生 masterKey
+       - vaultKey 独立存在，用于实际数据加密
+       - 列表缓存不含 secret/notes（降低内存风险）
+
+     安全注意：
+       - 浏览器环境无法保证内存绝对安全
+       - 解锁期间数据在内存中可被调试工具访问
+       - 请自行妥善备份导出文件
+     ============================================================= */
+      remainingSecretSeconds -= 1;
+      $("secretCountdown").textContent = String(Math.max(0, remainingSecretSeconds));
+    }, 1000);
+
+    secretTimerHandle = setTimeout(() => {
+
+  /* =============================================================
+     离线密码库 1.0 版本（详细注释版）
+     -------------------------------------------------------------
+     架构说明：
+       - 存储层：IndexedDB
+       - 加密层：WebCrypto (PBKDF2 + AES-GCM)
+       - 主密码仅用于派生 masterKey
+       - vaultKey 独立存在，用于实际数据加密
+       - 列表缓存不含 secret/notes（降低内存风险）
+
+     安全注意：
+       - 浏览器环境无法保证内存绝对安全
+       - 解锁期间数据在内存中可被调试工具访问
+       - 请自行妥善备份导出文件
+     ============================================================= */
+      clearSecretTimers();
+      toast("已自动隐藏密码");
+    }, SECRET_SHOW_SECONDS * 1000);
+  };
+
+  // =============================================================
+  // IndexedDB 数据封装层
+  // =============================================================
+  // 结构：
+  //   meta  表：存储加密元信息（salt / wrapped key 等）
+  //   items 表：存储每个条目的加密 payload
+  //
+  //   所有条目以 AES-GCM 加密 JSON 形式保存。
+  // ---------------------------
+  // IndexedDB
+  // ---------------------------
+  const openDB = () => new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (ev) => {
+      const db = ev.target.result;
+      if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META);
+      if (!db.objectStoreNames.contains(STORE_ITEMS)) db.createObjectStore(STORE_ITEMS, { keyPath: "id" });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  const idbGet = (store, key) => new Promise((resolve, reject) => {
+    const tx = db.transaction([store], "readonly");
+    const st = tx.objectStore(store);
+    const req = st.get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  const idbPut = (store, value, key=null) => new Promise((resolve, reject) => {
+    const tx = db.transaction([store], "readwrite");
+    const st = tx.objectStore(store);
+    const req = key === null ? st.put(value) : st.put(value, key);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+
+  const idbDelete = (store, key) => new Promise((resolve, reject) => {
+    const tx = db.transaction([store], "readwrite");
+    const st = tx.objectStore(store);
+    const req = st.delete(key);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+
+  const idbGetAll = (store) => new Promise((resolve, reject) => {
+    const tx = db.transaction([store], "readonly");
+    const st = tx.objectStore(store);
+    const req = st.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+
+  // =============================================================
+  // 加密模块（WebCrypto API）
+  // =============================================================
+  // 数据流程：
+  //   主密码 → PBKDF2 → masterKey
+  //   masterKey → 解包 → vaultKey
+  //   vaultKey → AES-GCM → 每条条目
+  //
+  // 设计原则：
+  //   主密码永不直接用于数据加密
+  //   通过 vaultKey 实现结构分离
+  // ---------------------------
+  // Crypto helpers (WebCrypto)
+  // ---------------------------
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  const b64e = (buf) => {
+    const bytes = new Uint8Array(buf);
+    let s = "";
+    for (let i=0;i<bytes.length;i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  };
+  const b64d = (str) => {
+    const bin = atob(str);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  };
+
+  const randomBytes = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+  const deriveMasterKey = async (password, saltB64, iterations) => {
+    const salt = new Uint8Array(b64d(saltB64));
+    const baseKey = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+      baseKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  };
+
+  const wrapVaultKey = async (masterKey, vaultKey) => {
+    const iv = randomBytes(12);
+    const rawVault = await crypto.subtle.exportKey("raw", vaultKey);
+    const wrapped = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, masterKey, rawVault);
+    return { iv: b64e(iv.buffer), wrapped: b64e(wrapped) };
+  };
+
+  const unwrapVaultKey = async (masterKey, wrappedB64, ivB64) => {
+    const wrapped = b64d(wrappedB64);
+    const iv = new Uint8Array(b64d(ivB64));
+    const raw = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, masterKey, wrapped);
+    return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  };
+
+  const encryptJSON = async (key, obj) => {
+    const iv = randomBytes(12);
+    const plaintext = enc.encode(JSON.stringify(obj));
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+    return { iv: b64e(iv.buffer), ciphertext: b64e(ciphertext) };
+  };
+
+  const decryptJSON = async (key, payload) => {
+    const iv = new Uint8Array(b64d(payload.iv));
+    const ciphertext = b64d(payload.ciphertext);
+    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+    return JSON.parse(dec.decode(plaintext));
+  };
+
+  // ---------------------------
+  // Vault meta
+  // ---------------------------
+  const loadVaultMeta = async () => {
+    return await idbGet(STORE_META, "vault_meta");
+  };
+
+  const createNewVault = async (password) => {
+    const salt = randomBytes(16);
+    const saltB64 = b64e(salt.buffer);
+
+    const mk = await deriveMasterKey(password, saltB64, KDF_ITERATIONS);
+    const vk = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+    const wrapped = await wrapVaultKey(mk, vk);
+
+    const meta = {
+      schema_version: 1,
+      kdf: { name: "PBKDF2", hash: "SHA-256", iterations: KDF_ITERATIONS },
+      salt: saltB64,
+      wrappedVaultKey: wrapped.wrapped,
+      wrappedVaultKeyIv: wrapped.iv,
+      createdAt: now(),
+      updatedAt: now()
+    };
+
+    await idbPut(STORE_META, meta, "vault_meta");
+    return { meta, mk, vk };
+  };
+
+  // =============================================================
+  // 条目数据层
+  // =============================================================
+  // 安全设计重点：
+  //   itemsCache 仅保存索引字段
+  //   secret 与 notes 不常驻内存
+  //   选中条目时才解密完整数据
+  //
+  // 这样可以减少：
+  //   - 浏览器扩展读取风险
+  //   - 批量内存扫描风险
+  // ---------------------------
+  // Items
+  // ---------------------------
+  const newId = () => {
+    const b = randomBytes(16);
+    return Array.from(b).map(x => x.toString(16).padStart(2,"0")).join("");
+  };
+
+  const getItemRow = async (id) => {
+    return await idbGet(STORE_ITEMS, id);
+  };
+
+  // ✅ Load list cache with decrypted index fields ONLY; do not retain secret/notes in memory
+  const loadAllItemsIndex = async () => {
+    const rows = await idbGetAll(STORE_ITEMS);
+    const out = [];
+    let failed = 0;
+
+    for (const row of rows) {
+      try{
+        const obj = await decryptJSON(vaultKey, row.payload);
+        out.push({
+          id: obj.id,
+          type: obj.type,
+          title: obj.title,
+          username: obj.username,
+          url: obj.url,
+          tags: Array.isArray(obj.tags) ? obj.tags : [],
+          bindEmail: obj.bindEmail || "",
+          bindPhone: obj.bindPhone || "",
+          bindWechat: obj.bindWechat || "",
+          bindQQ: obj.bindQQ || "",
+          memberExpire: obj.memberExpire || "",
+          memberNote: obj.memberNote || "",
+          createdAt: obj.createdAt,
+          updatedAt: obj.updatedAt
+        });
+      }catch(e){
+        failed += 1;
+        console.error("decrypt item failed", row?.id, e);
+      }
+    }
+
+    out.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
+    if (failed) {
+      toast("部分条目无法解密", `失败 ${failed} 条（可能密码不匹配或数据损坏）`);
+    }
+    return out;
+  };
+
+  const decryptItemById = async (id) => {
+    const row = await getItemRow(id);
+    if (!row) throw new Error("条目不存在或已删除");
+    return await decryptJSON(vaultKey, row.payload);
+  };
+
+  const upsertItem = async (itemFull) => {
+    const payload = await encryptJSON(vaultKey, itemFull);
+    await idbPut(STORE_ITEMS, { id: itemFull.id, payload });
+  };
+
+  const deleteItem = async (id) => {
+    await idbDelete(STORE_ITEMS, id);
+  };
+
+  // ---------------------------
+  // UI
+  // ---------------------------
+  const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+
+  const fillTypeSelects = () => {
+    const opts = ['<option value="">全部</option>'].concat(
+      ITEM_TYPES.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
+    ).join("");
+    $("filterType").innerHTML = opts;
+
+    $("fType").innerHTML = ITEM_TYPES.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+  };
+
+  const computeStats = (items) => {
+    $("kpiCount").textContent = String(items.length);
+    const types = new Set(items.map(x=>x.type).filter(Boolean));
+    $("kpiTypes").textContent = String(types.size);
+  };
+
+  const filteredItems = () => {
+    const q = ($("search").value || "").trim().toLowerCase();
+    const fType = $("filterType").value;
+    const fTags = normalizeTags($("filterTags").value).map(x => x.toLowerCase());
+
+    return itemsCache.filter(it => {
+      if (fType && it.type !== fType) return false;
+      if (fTags.length) {
+        const tags = (it.tags || []).map(x=>x.toLowerCase());
+        for (const t of fTags) if (!tags.includes(t)) return false;
+      }
+      if (!q) return true;
+
+      // ✅ Search only index fields (does not decrypt notes/secret)
+      const hay = [
+        it.title, it.username, it.url, (it.tags || []).join(","), it.type,
+        it.bindEmail, it.bindPhone, it.bindWechat, it.bindQQ,
+        it.memberExpire, it.memberNote
+      ].join(" ").toLowerCase();
+
+      return hay.includes(q);
+    });
+  };
+
+  const renderList = () => {
+    const list = $("list");
+    list.innerHTML = "";
+    const items = filteredItems();
+    computeStats(itemsCache);
+
+    if (!unlocked) {
+      list.innerHTML = `<div style="padding:16px;" class="muted">未解锁。点击右上角或按 <span class="mono">Ctrl/Cmd+L</span> 解锁。</div>`;
+      return;
+    }
+    if (!items.length) {
+      list.innerHTML = `<div style="padding:16px;" class="muted">暂无条目。点击“新建条目”开始。</div>`;
+      return;
+    }
+
+    for (const it of items) {
+      const div = document.createElement("div");
+      div.className = "item" + (it.id === activeId ? " active" : "");
+      div.onclick = () => { selectItem(it.id); };
+
+      const left = document.createElement("div");
+      left.style.minWidth = "0";
+      left.innerHTML = `
+        <div class="itemTitle">${escapeHtml(it.title || "(无标题)")}</div>
+        <div class="itemSub">
+          ${escapeHtml(it.type || "")}
+          ${it.username ? " · " + escapeHtml(it.username) : ""}
+          ${it.url ? " · " + escapeHtml(it.url) : ""}
+        </div>
+        <div class="itemSub">更新：${escapeHtml(formatDate(it.updatedAt || it.createdAt || 0))}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "tagline";
+      const tags = (it.tags || []).slice(0,4);
+      const exp = expiryStatus(it.memberExpire);
+      const expTag = exp
+        ? (exp.kind === "expired"
+            ? `<span class="tag" title="已过期">⏰ 已过期</span>`
+            : (exp.kind === "soon"
+                ? `<span class="tag" title="剩余 ${Math.max(0, exp.diffDays)} 天">⏰ 到期 ${escapeHtml(formatDateShort(it.memberExpire))}</span>`
+                : `<span class="tag" title="到期日">⏰ ${escapeHtml(formatDateShort(it.memberExpire))}</span>`
+              )
+          )
+        : "";
+
+      right.innerHTML = expTag + tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("") +
+        ((it.tags||[]).length > 4 ? `<span class="tag">+${(it.tags||[]).length-4}</span>` : "");
+
+div.appendChild(left);
+      div.appendChild(right);
+      list.appendChild(div);
+    }
+  };
+
+  const clearForm = () => {
+    activeId = null;
+    activeItemFull = null;
+
+    $("fType").value = ITEM_TYPES[0];
+    $("fTitle").value = "";
+    $("fUsername").value = "";
+    $("fUrl").value = "";
+    $("fTags").value = "";
+    $("fSecret").value = "";
+    $("fNotes").value = "";
+
+    
+    
+    $("fBindEmail").value = "";
+    $("fBindPhone").value = "";
+    $("fBindWechat").value = "";
+    $("fBindQQ").value = "";
+    $("fMemberExpire").value = "";
+    $("fMemberNote").value = "";
+$("fBindEmail").value = "";
+    $("fBindPhone").value = "";
+    $("fBindWechat").value = "";
+    $("fBindQQ").value = "";
+    $("fMemberExpire").value = "";
+    $("fMemberNote").value = "";
+clearSecretTimers();
+    updateButtons();
+  };
+
+  const isFormEmpty = () => {
+    return !($("fTitle").value || $("fUsername").value || $("fUrl").value || $("fTags").value ||
+      $("fBindEmail").value || $("fBindPhone").value || $("fBindWechat").value || $("fBindQQ").value ||
+      $("fMemberExpire").value || $("fMemberNote").value ||
+      $("fSecret").value || $("fNotes").value);
+  };
+
+  const updateButtons = () => {
+    const hasActive = !!activeId;
+    $("btnDelete").disabled = !hasActive;
+    $("btnCancel").disabled = !hasActive && isFormEmpty();
+    $("btnSave").disabled = !unlocked;
+    $("btnCopyUser").disabled = !unlocked;
+    $("btnCopySecret").disabled = !unlocked;
+    $("btnToggleSecret").disabled = !unlocked;
+  };
+
+  const selectItem = async (id) => {
+    if (!unlocked) return;
+    const idx = itemsCache.find(x => x.id === id);
+    if (!idx) return;
+
+    // Clear visible secret immediately to avoid showing stale secrets during async decrypt
+    clearSecretTimers();
+    $("fSecret").value = "";
+    $("fNotes").value = "";
+
+    
+    $("fBindEmail").value = "";
+    $("fBindPhone").value = "";
+    $("fBindWechat").value = "";
+    $("fBindQQ").value = "";
+    $("fMemberExpire").value = "";
+    $("fMemberNote").value = "";
+activeId = id;
+    renderList();
+    updateButtons();
+
+    try{
+      const full = await decryptItemById(id);
+      activeItemFull = full;
+
+      $("fType").value = full.type || ITEM_TYPES[0];
+      $("fTitle").value = full.title || "";
+      $("fUsername").value = full.username || "";
+      $("fUrl").value = full.url || "";
+      $("fTags").value = (full.tags || []).join(", ");
+      $("fSecret").value = full.secret || "";
+      $("fNotes").value = full.notes || "";
+
+      
+      $("fBindEmail").value = full.bindEmail || "";
+      $("fBindPhone").value = full.bindPhone || "";
+      $("fBindWechat").value = full.bindWechat || "";
+      $("fBindQQ").value = full.bindQQ || "";
+      $("fMemberExpire").value = full.memberExpire || "";
+      $("fMemberNote").value = full.memberNote || "";
+clearSecretTimers();
+      updateButtons();
+    }catch(e){
+      toast("读取条目失败", String(e?.message || e));
+    }
+  };
+
+  const readFormFull = () => {
+    const id = activeId || newId();
+    const ts = now();
+
+    // Try to preserve createdAt from active item or cache
+    const existingIdx = itemsCache.find(x=>x.id===id);
+    const existingCreatedAt = activeItemFull?.createdAt || existingIdx?.createdAt;
+
+    return {
+      id,
+      type: $("fType").value || "其他",
+      title: ($("fTitle").value || "").trim(),
+      username: ($("fUsername").value || "").trim(),
+      url: ($("fUrl").value || "").trim(),
+      tags: normalizeTags($("fTags").value),
+      secret: $("fSecret").value || "",
+      notes: ($("fNotes").value || "").trim(),
+      bindEmail: ($("fBindEmail").value || "").trim(),
+      bindPhone: ($("fBindPhone").value || "").trim(),
+      bindWechat: ($("fBindWechat").value || "").trim(),
+      bindQQ: ($("fBindQQ").value || "").trim(),
+      memberExpire: ($("fMemberExpire").value || "").trim(),
+      memberNote: ($("fMemberNote").value || "").trim(),
+
+      createdAt: existingCreatedAt || ts,
+      updatedAt: ts
+    };
+  };
+
+  const indexFromFull = (full) => ({
+    id: full.id,
+    type: full.type,
+    title: full.title,
+    username: full.username,
+    url: full.url,
+    tags: Array.isArray(full.tags) ? full.tags : [],
+    bindEmail: full.bindEmail || "",
+    bindPhone: full.bindPhone || "",
+    bindWechat: full.bindWechat || "",
+    bindQQ: full.bindQQ || "",
+    memberExpire: full.memberExpire || "",
+    memberNote: full.memberNote || "",
+    createdAt: full.createdAt,
+    updatedAt: full.updatedAt
+  });
+
+  // ---------------------------
+  // Clipboard
+  // ---------------------------
+  const copyText = async (text, label="已复制") => {
+    resetIdleTimer();
+    if (!text) { toast("没有可复制内容"); return; }
+    try{
+      await navigator.clipboard.writeText(text);
+      toast(label, "已写入剪贴板（建议尽快粘贴）");
+
+      // Best-effort: try to overwrite clipboard later (platform may deny)
+      setTimeout(async () => {
+        try{ await navigator.clipboard.writeText(""); }catch{}
+      }, 30_000);
+    }catch(e){
+      try{
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast(label, "已写入剪贴板（fallback）");
+      }catch(err){
+        toast("复制失败", "浏览器可能禁止剪贴板访问");
+      }
+    }
+  };
+
+  // =============================================================
+  // 锁定 / 解锁机制
+  // =============================================================
+  // 解锁：
+  //   输入主密码 → 派生 key → 解包 vaultKey → 加载索引
+  //
+  // 锁定：
+  //   清空 key → 清空缓存 → 更新 UI
+  //
+  // 自动锁定：
+  //   基于用户交互事件刷新 idleTimer
+  // ---------------------------
+  // Lock / Unlock
+  // ---------------------------
+  const showModal = async () => {
+    $("overlay").classList.add("show");
+    $("masterPassword").value = "";
+    $("masterPassword2").value = "";
+    $("masterPassword").focus();
+
+    const meta = await loadVaultMeta();
+    if (!meta) {
+      $("modalTitle").textContent = "创建新密码库";
+      $("modalDesc").textContent = "首次使用：请设置主密码。数据将加密保存在本机浏览器的 IndexedDB。";
+      $("setupArea").style.display = "block";
+      $("btnSetup").style.display = "inline-flex";
+    } else {
+      $("modalTitle").textContent = "解锁密码库";
+      $("modalDesc").textContent = "输入主密码以解锁。主密码不会上传网络。";
+      $("setupArea").style.display = "none";
+      $("btnSetup").style.display = "none";
+    }
+  };
+
+  const hideModal = () => {
+    $("overlay").classList.remove("show");
+  };
+
+  const hardClearSensitive = () => {
+    // Best-effort: remove references to sensitive strings/objects
+    activeItemFull = null;
+    $("fSecret").value = "";
+    $("fNotes").value = "";
+    
+    $("fBindEmail").value = "";
+    $("fBindPhone").value = "";
+    $("fBindWechat").value = "";
+    $("fBindQQ").value = "";
+    $("fMemberExpire").value = "";
+    $("fMemberNote").value = "";
+clearSecretTimers();
+  };
+
+  const lockVault = (reason="已锁定") => {
+    unlocked = false;
+    masterKey = null;
+    vaultKey = null;
+    vaultMeta = null;
+
+    itemsCache = [];
+    activeId = null;
+    hardClearSensitive();
+    clearForm();
+
+    renderList();
+    updateSessionPill();
+    updateButtons();
+
+    toast(reason);
+  };
+
+  const unlockVault = async (password) => {
+    const meta = await loadVaultMeta();
+    if (!meta) throw new Error("Vault not initialized");
+
+    const iterations = meta?.kdf?.iterations || KDF_ITERATIONS;
+    const mk = await deriveMasterKey(password, meta.salt, iterations);
+    const vk = await unwrapVaultKey(mk, meta.wrappedVaultKey, meta.wrappedVaultKeyIv);
+
+    masterKey = mk;
+    vaultKey = vk;
+    vaultMeta = meta;
+    unlocked = true;
+
+    // Load only index cache (non-sensitive)
+    itemsCache = await loadAllItemsIndex();
+
+    activeId = null;
+    clearForm();
+    renderList();
+    updateSessionPill();
+    updateButtons();
+    resetIdleTimer();
+  };
+
+  // =============================================================
+  // 导入 / 导出模块
+  // =============================================================
+  // 特点：
+  //   - 导出文件仍为加密状态
+  //   - 强校验 JSON 结构与大小
+  //   - 无找回密码功能
+  //
+  // 说明：
+  //   若主密码丢失，数据无法恢复。
+  // ---------------------------
+  // Export / Import
+  // ---------------------------
+  const exportVault = async () => {
+    resetIdleTimer();
+    if (!unlocked) { toast("请先解锁"); return; }
+
+    const encRows = await idbGetAll(STORE_ITEMS);
+    const meta = await loadVaultMeta();
+
+    const container = {
+      format: "offline-vault",
+      version: 1,
+      exportedAt: now(),
+      meta,
+      items: encRows
+    };
+
+    const blob = new Blob([JSON.stringify(container, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const ts = new Date().toISOString().replace(/[:.]/g,"-");
+    a.download = `vault-${ts}.vault.json`;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    toast("已导出（加密）", "文件包含密文与加密元数据（需原主密码解锁）");
+  };
+
+  const assertB64 = (s) => {
+    if (typeof s !== "string" || !s.length) return false;
+    // Basic sanity; also ensure atob doesn't throw
+    try{ atob(s); return true; }catch{ return false; }
+  };
+
+  const validateImport = (obj) => {
+    if (obj?.format !== "offline-vault" || obj?.version !== 1) throw new Error("不支持的导入格式/版本");
+    if (!obj.meta || !Array.isArray(obj.items)) throw new Error("导入文件缺少必要字段");
+
+    const m = obj.meta;
+    if (m?.schema_version !== 1) throw new Error("不支持的 schema_version");
+    if (!m?.kdf || m.kdf.name !== "PBKDF2") throw new Error("不支持的 KDF");
+    if (typeof m?.kdf?.iterations !== "number" || m.kdf.iterations < 100_000) throw new Error("KDF iterations 非法");
+    if (!assertB64(m?.salt)) throw new Error("salt 非法");
+    if (!assertB64(m?.wrappedVaultKey) || !assertB64(m?.wrappedVaultKeyIv)) throw new Error("wrappedVaultKey/IV 非法");
+  };
+
+  const importVault = async (file) => {
+    if (file.size > IMPORT_MAX_BYTES) {
+      throw new Error(`文件过大（>${Math.floor(IMPORT_MAX_BYTES/1024/1024)}MB），为避免卡死已拒绝导入`);
+    }
+
+    const text = await file.text();
+    let obj;
+    try{ obj = JSON.parse(text); }catch{ throw new Error("文件不是有效 JSON"); }
+    validateImport(obj);
+
+    if (obj.items.length > IMPORT_SOFT_MAX_ITEMS) {
+      const ok = confirm(`导入文件包含 ${obj.items.length} 条密文记录，可能导致浏览器卡顿。\n仍要继续导入吗？`);
+      if (!ok) throw new Error("用户取消导入");
+    }
+
+    await idbPut(STORE_META, obj.meta, "vault_meta");
+
+    const tx = db.transaction([STORE_ITEMS], "readwrite");
+    await new Promise((resolve, reject) => {
+      const req = tx.objectStore(STORE_ITEMS).clear();
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+
+    // Write rows with minimal validation
+    let kept = 0;
+    for (const row of obj.items) {
+      if (row?.id && row?.payload?.iv && row?.payload?.ciphertext && assertB64(row.payload.iv) && assertB64(row.payload.ciphertext)) {
+        await idbPut(STORE_ITEMS, row);
+        kept += 1;
+      }
+    }
+
+    lockVault("已导入，请解锁");
+    toast("导入成功", `已写入 ${kept} 条记录；请使用对应主密码解锁`);
+  };
+
+  // ---------------------------
+  // Password generator
+  // ---------------------------
+  const generatePassword = (len=20) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789" +
+      "!@#$%^&*()-_=+[]{};:,.?/|~";
+    const bytes = randomBytes(len);
+    let out = "";
+    for (let i=0;i<len;i++) out += chars[bytes[i] % chars.length];
+    return out;
+  };
+
+  // ---------------------------
+  // Events
+  // ---------------------------
+  const bindEvents = () => {
+    ["click","keydown","mousemove","scroll","touchstart"].forEach(ev => {
+      document.addEventListener(ev, () => resetIdleTimer(), { passive:true });
+    });
+
+    $("btnLock").onclick = () => lockVault("已手动锁定");
+    $("btnExport").onclick = exportVault;
+    $("btnImport").onclick = () => { $("fileInput").click(); };
+    $("fileInput").addEventListener("change", async (e) => {
+      const f = e.target.files?.[0];
+      e.target.value = "";
+      if (!f) return;
+      try{
+        await importVault(f);
+      }catch(err){
+        toast("导入失败", String(err?.message || err));
+      }
+    });
+
+    $("btnRefresh").onclick = async () => {
+      if (!unlocked) { toast("请先解锁"); return; }
+      itemsCache = await loadAllItemsIndex();
+      renderList();
+      toast("已刷新");
+    };
+
+    $("btnNew").onclick = () => {
+      if (!unlocked) { showModal(); return; }
+      clearForm();
+      toast("新建条目", "在右侧填写并保存");
+    };
+
+    $("btnGenerate").onclick = () => {
+      if (!unlocked) { toast("请先解锁"); return; }
+      const pw = generatePassword(20);
+      $("fSecret").value = pw;
+      clearSecretTimers(); // 生成后默认仍隐藏
+      toast("已生成密码", "建议保存后再复制使用");
+      updateButtons();
+    };
+
+    $("search").addEventListener("input", renderList);
+    $("filterType").addEventListener("change", renderList);
+    $("filterTags").addEventListener("input", renderList);
+
+    $("btnCopyUser").onclick = () => copyText($("fUsername").value, "已复制账号");
+    $("btnCopySecret").onclick = async () => {
+      // Ensure active full is present; if not, it might be a new unsaved entry
+      await copyText($("fSecret").value, "已复制密码");
+    };
+
+    $("btnToggleSecret").onclick = () => {
+      if (!unlocked) return;
+      const el = $("fSecret");
+      const hidden = supportsTextSecurity ? el.classList.contains("masked") : (el.type === "password");
+      if (hidden) showSecret(); else clearSecretTimers();
+    };
+
+    $("btnSave").onclick = async () => {
+      if (!unlocked) { toast("请先解锁"); return; }
+      const itemFull = readFormFull();
+      if (!itemFull.title && !itemFull.username && !itemFull.url) {
+        toast("无法保存", "至少填写标题/账号/URL 之一");
+        return;
+      }
+
+      await upsertItem(itemFull);
+
+      // Update list cache (non-sensitive)
+      const idxObj = indexFromFull(itemFull);
+      const idx = itemsCache.findIndex(x=>x.id===itemFull.id);
+      if (idx >= 0) itemsCache[idx] = idxObj; else itemsCache.push(idxObj);
+      itemsCache.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
+
+      activeId = itemFull.id;
+      activeItemFull = itemFull;
+      clearSecretTimers(); // 保存后回到隐藏
+      renderList();
+      toast("已保存", itemFull.title || "(无标题)");
+    };
+
+    $("btnCancel").onclick = async () => {
+      if (!unlocked) { clearForm(); return; }
+
+      if (activeId) {
+        // Reload from DB to revert changes, ensures we don't rely on old in-memory secret
+        try{
+          await selectItem(activeId);
+          toast("已取消修改");
+        }catch{
+          clearForm();
+          toast("已清空");
+        }
+      } else {
+        clearForm();
+        toast("已清空");
+      }
+    };
+
+    $("btnDelete").onclick = async () => {
+      if (!unlocked) return;
+      if (!activeId) return;
+
+      const itIdx = itemsCache.find(x=>x.id===activeId);
+      const name = itIdx?.title || "(无标题)";
+      const ok = confirm(`确认删除：${name} ？\n（此操作不可撤销）`);
+      if (!ok) return;
+
+      await deleteItem(activeId);
+
+      itemsCache = itemsCache.filter(x=>x.id!==activeId);
+      activeId = null;
+      hardClearSensitive();
+      clearForm();
+      renderList();
+      toast("已删除", name);
+    };
+
+    $("btnUnlock").onclick = async () => {
+      try{
+        const pw = $("masterPassword").value;
+        if (!pw) { toast("请输入主密码"); return; }
+        toast("正在解锁…", "正在派生密钥并解密索引");
+        await unlockVault(pw);
+        hideModal();
+        toast("解锁成功");
+      }catch(err){
+        toast("解锁失败", "主密码错误或数据损坏");
+      }
+    };
+
+    $("btnSetup").onclick = async () => {
+      try{
+        const pw1 = $("masterPassword").value;
+        const pw2 = $("masterPassword2").value;
+        if (!pw1 || pw1.length < 10) {
+          toast("主密码过短", "建议至少 10 位，包含大小写/数字/符号");
+          return;
+        }
+        if (pw1 !== pw2) {
+          toast("两次输入不一致");
+          return;
+        }
+        const { meta, mk, vk } = await createNewVault(pw1);
+        vaultMeta = meta;
+        masterKey = mk;
+        vaultKey = vk;
+        unlocked = true;
+        itemsCache = [];
+        activeId = null;
+        hardClearSensitive();
+        clearForm();
+        renderList();
+        updateSessionPill();
+        updateButtons();
+        resetIdleTimer();
+        hideModal();
+        toast("已创建并解锁", "请立即导出备份（加密）");
+      }catch(err){
+        toast("创建失败", String(err?.message || err));
+      }
+    };
+
+    $("btnCloseModal").onclick = hideModal;
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        showModal();
+      }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && unlocked) {
+        lockVault("页面离开已锁定");
+      }
+    });
+
+    ["fType","fTitle","fUsername","fUrl","fTags","fBindEmail","fBindPhone","fBindWechat","fBindQQ","fMemberExpire","fMemberNote","fSecret","fNotes"].forEach(id => {
+      $(id).addEventListener("input", updateButtons);
+    });
+  };
+
+  // =============================================================
+  // 初始化入口
+  // =============================================================
+  // 执行顺序：
+  //   1. 填充 UI
+  //   2. 打开 IndexedDB
+  //   3. 绑定事件
+  //   4. 显示解锁界面
+  //
+  // 若此处报错，说明浏览器环境不支持 IndexedDB 或 WebCrypto。
+  // ---------------------------
+  // Init
+  // ---------------------------
+  const init = async () => {
+    fillTypeSelects();
+    db = await openDB();
+    bindEvents();
+
+    // UX: adjust search placeholder (no notes search unless you implement extra toggle)
+    $("search").placeholder = "搜索：标题 / 账号 / URL / 标签 / 类型 / 绑定信息 / 会员信息（不含备注）";
+
+    await showModal();
+    renderList();
+    updateButtons();
+    updateSessionPill();
+
+    // Default hide
+    hideSecret();
+  };
+
+  init().catch(err => {
+    console.error(err);
+    alert("初始化失败：" + (err?.message || err));
+  });
+})();
+</script>
+</body>
+</html>
