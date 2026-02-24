@@ -2,137 +2,279 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lab Tools</title>
+  <meta name="description" content="实验室小工具集合（Lab Tools）- 通过 GitHub Pages 在线访问；数据保存在本机浏览器（localStorage / IndexedDB）。" />
 
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                   Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      background: #f5f7fa;
-      color: #333;
+    :root{
+      --bg:#0b0f17; --card:#121a2a; --card2:#0f1626; --text:#e8eefc; --muted:#9fb0d1;
+      --line:#23304a; --accent:#5aa7ff; --ok:#5cffb3; --warn:#ffd166;
+      --shadow: 0 14px 38px rgba(0,0,0,.38);
+      --radius:18px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 18% 0%, rgba(90,167,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 100% 18%, rgba(92,255,179,.14), transparent 60%),
+        radial-gradient(900px 700px at 70% 100%, rgba(255,209,102,.10), transparent 55%),
+        var(--bg);
+    }
+    a{color:inherit; text-decoration:none}
+    .wrap{max-width:1100px; margin:0 auto; padding:28px 18px 48px;}
+    .top{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:14px 16px; border:1px solid rgba(35,48,74,.7);
+      background: rgba(18,26,42,.70);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex; align-items:center; gap:12px; min-width:0}
+    .logo{
+      width:42px; height:42px; border-radius:16px;
+      background: linear-gradient(135deg, rgba(90,167,255,.95), rgba(92,255,179,.78));
+      box-shadow: 0 10px 26px rgba(0,0,0,.35);
+      flex: 0 0 auto;
+    }
+    .title{min-width:0}
+    h1{font-size:16px; margin:0; letter-spacing:.3px}
+    .subtitle{font-size:12px; color:var(--muted); margin-top:3px; line-height:1.4}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px; border-radius:14px;
+      border:1px solid rgba(35,48,74,.9);
+      background: rgba(15,22,38,.7);
+      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+      cursor:pointer;
+      font-size:13px;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(90,167,255,.55)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(90,167,255,.25), rgba(92,255,179,.18));
+      border-color: rgba(90,167,255,.65);
     }
 
-    header {
-      padding: 28px 20px;
-      background: #001529;
-      color: #fff;
+    .grid{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
     }
-
-    header h1 {
-      margin: 0;
-      font-size: 20px;
+    .card{
+      grid-column: span 6;
+      border:1px solid rgba(35,48,74,.7);
+      background: rgba(18,26,42,.72);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      position:relative;
     }
-
-    header .subtitle {
-      margin-top: 8px;
-      font-size: 13px;
-      color: #c9d1d9;
+    .card:hover{border-color: rgba(90,167,255,.55)}
+    .cardInner{padding:16px 16px 14px}
+    .cardTop{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+    .badge{
+      font-size:12px; color:var(--muted);
+      border:1px solid rgba(35,48,74,.9);
+      padding:6px 10px; border-radius:999px;
+      background: rgba(15,22,38,.55);
+      white-space:nowrap;
     }
-
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
+    .badge.ok{border-color: rgba(92,255,179,.45); color: rgba(200,255,232,.95)}
+    .badge.data{border-color: rgba(90,167,255,.50); color: rgba(220,235,255,.96)}
+    .name{font-size:15px; margin:0 0 6px; letter-spacing:.2px}
+    .desc{margin:0; color:var(--muted); font-size:13px; line-height:1.6}
+    .meta{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .pill{
+      font-size:12px; color:rgba(232,238,252,.92);
+      background: rgba(15,22,38,.55);
+      border:1px solid rgba(35,48,74,.9);
+      padding:6px 10px; border-radius:999px;
     }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    .cardFooter{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 16px;
+      border-top:1px solid rgba(35,48,74,.55);
+      background: rgba(15,22,38,.55);
     }
-
-    .card h2 {
-      margin: 0 0 6px 0;
-      font-size: 16px;
+    .link{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:13px; color: rgba(232,238,252,.95);
     }
-
-    .muted {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 10px;
+    .link .arrow{transition: transform .12s ease}
+    .card:hover .link .arrow{transform: translateX(2px)}
+    .small{font-size:12px; color:var(--muted)}
+    .mono{font-family:var(--mono)}
+    .hint{
+      margin-top:16px;
+      border:1px dashed rgba(35,48,74,.8);
+      background: rgba(15,22,38,.45);
+      border-radius: var(--radius);
+      padding:14px 16px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.65;
     }
-
-    .card-actions {
-      display: flex;
-      gap: 16px;
-      align-items: center;
+    .footer{
+      margin-top:16px;
+      display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      color: var(--muted); font-size:12px;
     }
-
-    .card-actions a {
-      text-decoration: none;
-      font-size: 14px;
+    .kmeta{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .kmeta span{
+      font-size:12px; color:rgba(232,238,252,.9);
+      border:1px solid rgba(35,48,74,.85);
+      background: rgba(15,22,38,.40);
+      padding:6px 10px; border-radius:999px;
     }
-
-    .card-actions a.primary {
-      color: #1890ff;
-      font-weight: 500;
-    }
-
-    .card-actions a.secondary {
-      color: #666;
-      font-size: 13px;
-    }
-
-    .card-actions a:hover {
-      text-decoration: underline;
+    @media (max-width: 900px){
+      .card{grid-column: span 12}
+      .actions{justify-content:flex-start}
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>实验室小工具集合（Lab Tools）</h1>
-    <div class="subtitle">
-      通过 GitHub Pages 在线访问；数据保存在本机浏览器（localStorage）。
-    </div>
-  </header>
-
-  <main>
-    <!-- ================= 细胞冻存管理系统 ================= -->
-    <div class="card">
-      <h2>细胞冻存管理系统</h2>
-      <div class="muted">
-        容器 / 孔位管理，全局搜索，低库存预警，导入导出备份。
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="title">
+          <h1>实验室小工具集合（Lab Tools）</h1>
+          <div class="subtitle">通过 GitHub Pages 在线访问；数据保存在本机浏览器（localStorage / IndexedDB）。</div>
+        </div>
       </div>
 
-      <div class="card-actions">
-        <a class="primary" href="/lab-tools/tools/cell-storage/">
-          打开工具 →
-        </a>
-
-        <a class="secondary"
-           href="/lab-tools/tools/cell-storage/manual.html"
-           target="_blank">
-          📘 使用说明
+      <div class="actions">
+        <a class="btn" href="https://github.com/sonify2026/sonify2026.github.io" target="_blank" rel="noreferrer">
+          ⭐ <span>GitHub</span>
         </a>
       </div>
     </div>
 
-    <!-- ================= 抗体库存管理系统 ================= -->
-    <div class="card">
-      <h2>抗体库存管理系统</h2>
-      <div class="muted">
-        抗体位置可视化管理，拖拽移动，剩余量计算，低库存预警，导入导出备份。
+    <div class="grid" role="list">
+      <!-- 细胞冻存管理系统 -->
+      <div class="card" role="listitem" aria-label="细胞冻存管理系统">
+        <div class="cardInner">
+          <div class="cardTop">
+            <div>
+              <h2 class="name">细胞冻存管理系统</h2>
+              <p class="desc">容器 / 孔位管理，全局搜索，低库存预警，导入导出备份。</p>
+              <div class="meta">
+                <span class="pill">localStorage</span>
+                <span class="pill">导入/导出</span>
+                <span class="pill">低库存预警</span>
+              </div>
+            </div>
+            <span class="badge data">Tool</span>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <a class="link" href="/lab-tools/tools/cell-storage/">打开工具 <span class="arrow">→</span></a>
+          <a class="small" href="/lab-tools/tools/cell-storage/manual.html" target="_blank" rel="noreferrer">📘 使用说明</a>
+        </div>
       </div>
 
-      <div class="card-actions">
-        <a class="primary" href="/lab-tools/tools/antibody-inventory/">
-          打开工具 →
-        </a>
+      <!-- 抗体库存管理系统 -->
+      <div class="card" role="listitem" aria-label="抗体库存管理系统">
+        <div class="cardInner">
+          <div class="cardTop">
+            <div>
+              <h2 class="name">抗体库存管理系统</h2>
+              <p class="desc">抗体位置可视化管理，拖拽移动，剩余量计算，低库存预警，导入导出备份。</p>
+              <div class="meta">
+                <span class="pill">localStorage</span>
+                <span class="pill">拖拽</span>
+                <span class="pill">导入/导出</span>
+                <span class="pill">低库存预警</span>
+              </div>
+            </div>
+            <span class="badge data">Tool</span>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <a class="link" href="/lab-tools/tools/antibody-inventory/">打开工具 <span class="arrow">→</span></a>
+          <a class="small" href="/lab-tools/tools/antibody-inventory/manual.html" target="_blank" rel="noreferrer">📘 使用说明</a>
+        </div>
+      </div>
 
-        <a class="secondary"
-           href="/lab-tools/tools/antibody-inventory/manual.html"
-           target="_blank">
-          📘 使用说明
-        </a>
+      <!-- Vault -->
+      <div class="card" role="listitem" aria-label="Vault 离线密码库">
+        <div class="cardInner">
+          <div class="cardTop">
+            <div>
+              <h2 class="name">Vault · 离线密码库</h2>
+              <p class="desc">本地 IndexedDB 持久化，PBKDF2 + AES-GCM 加密。支持账号绑定信息与会员到期管理。</p>
+              <div class="meta">
+                <span class="pill">IndexedDB</span>
+                <span class="pill">加密存储</span>
+                <span class="pill">自动锁定</span>
+                <span class="pill">导入/导出（加密）</span>
+              </div>
+            </div>
+            <span class="badge ok">v1.0</span>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <a class="link" href="/lab-tools/vault/">打开工具 <span class="arrow">→</span></a>
+          <span class="small mono">/lab-tools/vault/</span>
+        </div>
+      </div>
+
+      <!-- 预留位 -->
+      <div class="card" role="listitem" aria-label="预留工具位">
+        <div class="cardInner">
+          <div class="cardTop">
+            <div>
+              <h2 class="name">更多工具 ·（预留）</h2>
+              <p class="desc">新增工具：在 <span class="mono">/lab-tools/工具名/index.html</span> 待增加。</p>
+              <div class="kmeta">
+                <span>可扩展</span><span>独立目录</span><span>单页应用友好</span>
+              </div>
+            </div>
+            <span class="badge">Coming</span>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <span class="small">打开工具...</span>
+          <span class="small mono">/lab-tools/…</span>
+        </div>
       </div>
     </div>
 
-    <!-- 以后新增工具，复制上面的 card 即可 -->
-  </main>
+   <div class="hint">
+  <div style="margin-bottom:6px;color:rgba(232,238,252,.92);font-weight:600;">
+    使用说明
+  </div>
+
+  <div>• 所有数据仅保存在你的浏览器中，不会上传到服务器。</div>
+
+  <div>• 如果清除浏览器数据、切换设备或使用无痕模式，数据将不会自动同步。</div>
+
+  <div>• 建议定期使用各工具内的“导出备份”功能，妥善保存文件。</div>
+
+  <div>• Vault（密码库）请务必记住主密码，丢失后数据无法恢复。</div>
+</div>
+
+    <div class="footer">
+      <div>© <span id="year"></span> Sonify 2026 · Lab Tools</div>
+      <div class="mono">Status: <span style="color:rgba(200,255,232,.95)">OK</span></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = String(new Date().getFullYear());
+  </script>
 </body>
 </html>
