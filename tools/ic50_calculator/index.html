@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IC50 计算器</title>
+  <meta name="description" content="离线可用的 IC50 计算器：粘贴浓度-响应数据，4PL 拟合并输出 IC50、Hill、Top、Bottom，并绘图。支持重复聚合、趋势手动选择、拟合质量指标。" />
+  <style>
+    :root{
+      --bg:#f3f5f7;
+      --panel:#ffffff;
+      --panel2:#f8fafc;
+      --stroke:#d8dee6;
+      --stroke2:#c9d1dc;
+      --text:#0f172a;
+      --muted:#475569;
+      --muted2:#64748b;
+      --accent:#4f46e5;     /* indigo */
+      --accent2:#16a34a;    /* green  */
+      --danger:#dc2626;
+      --warn:#b45309;
+      --shadow: 0 14px 40px rgba(2,6,23,0.08);
+      --radius:16px;
+      --radius2:12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: linear-gradient(180deg, #f7f8fa 0%, var(--bg) 40%, #eef2f6 100%);
+      min-height:100vh;
+    }
+    .wrap{
+      max-width: 1180px;
+      margin: 26px auto 46px;
+      padding: 0 16px;
+    }
+    .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 14px;
+    }
+    .brand h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+      font-weight: 800;
+    }
+    .brand p{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.45;
+      max-width: 860px;
+    }
+    .badges{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      padding-top:2px;
+    }
+    .badge{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--stroke);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      box-shadow: 0 2px 10px rgba(2,6,23,0.05);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: var(--panel);
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 14px 16px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
+    }
+    .card .title h2{
+      margin:0;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .card .title span{
+      display:block;
+      margin-top: 4px;
+      color: var(--muted2);
+      font-size: 12px;
+      line-height:1.35;
+    }
+    .card .bd{ padding: 14px 16px 16px; }
+    textarea{
+      width:100%;
+      min-height: 240px;
+      border-radius: var(--radius2);
+      border: 1px solid var(--stroke2);
+      outline: none;
+      padding: 12px 12px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      background: #fff;
+      resize: vertical;
+    }
+    textarea:focus{ border-color: rgba(79,70,229,0.55); box-shadow: 0 0 0 4px rgba(79,70,229,0.12); }
+    .controls{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+      align-items:flex-end;
+    }
+    .ctrl{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 140px;
+    }
+    .ctrl label{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    select, input[type="text"]{
+      height: 36px;
+      border-radius: 12px;
+      border:1px solid var(--stroke2);
+      padding: 0 10px;
+      background:#fff;
+      color: var(--text);
+      font-size: 13px;
+      outline:none;
+    }
+    select:focus, input[type="text"]:focus{ border-color: rgba(79,70,229,0.55); box-shadow: 0 0 0 4px rgba(79,70,229,0.12); }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 8px 10px;
+      border:1px solid var(--stroke2);
+      border-radius: 12px;
+      height: 36px;
+      background:#fff;
+      user-select:none;
+      min-width: 220px;
+    }
+    .toggle input{ margin:0; }
+    .toggle span{ font-size: 13px; color: var(--text); }
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    button{
+      height: 38px;
+      border-radius: 12px;
+      border:1px solid var(--stroke2);
+      background:#fff;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 0 12px;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      box-shadow: 0 2px 12px rgba(2,6,23,0.05);
+    }
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0px); }
+    .primary{
+      background: linear-gradient(180deg, rgba(79,70,229,1) 0%, rgba(67,56,202,1) 100%);
+      border-color: rgba(67,56,202,1);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(79,70,229,0.22);
+    }
+    .ghost{
+      background: #fff;
+      color: var(--text);
+    }
+    .kbd{
+      font-family: var(--mono);
+      font-size: 11px;
+      border-radius: 8px;
+      padding: 2px 6px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.22);
+      color:#fff;
+      font-weight:800;
+    }
+    .hint{
+      padding: 10px 12px;
+      border: 1px dashed rgba(100,116,139,0.35);
+      border-radius: var(--radius2);
+      background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+    .hint code{
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(15,23,42,0.05);
+      padding: 1px 6px;
+      border-radius: 8px;
+      color: var(--text);
+      border:1px solid rgba(15,23,42,0.08);
+    }
+    .foot{
+      margin-top: 12px;
+      color: var(--muted2);
+      font-size: 12px;
+      line-height:1.45;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
+      margin-top: 4px;
+    }
+    .kv .k{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .kv .v{
+      font-family: var(--mono);
+      font-size: 12.5px;
+      text-align:right;
+      color: var(--text);
+      white-space:nowrap;
+    }
+    .notice{
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(180,83,9,0.25);
+      background: rgba(245,158,11,0.08);
+      color: #7c2d12;
+      font-size: 12.5px;
+      line-height: 1.5;
+      display:none;
+    }
+    .notice.show{ display:block; }
+    .notice.danger{
+      border-color: rgba(220,38,38,0.22);
+      background: rgba(220,38,38,0.08);
+      color: #7f1d1d;
+    }
+    .plotcard canvas{
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border:1px solid var(--stroke2);
+      background:#fff;
+    }
+    .split{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .mini{
+      font-size: 12px;
+      color: var(--muted2);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <h1>IC50 计算器<span class="mini"> 4PL 拟合</span></h1>
+        <p>
+          离线单文件工具：粘贴浓度-响应数据，进行 4 参数 Logistic（4PL）拟合，输出 IC50 / Hill / Top / Bottom，并绘图。
+          本版增强：重复聚合（跨行同浓度）、趋势可手动选择、拟合质量指标（RMSE / R²）、外推与覆盖提示、修复 PNG 导出按钮。
+        </p>
+      </div>
+      <div class="badges">
+        <div class="badge" title="模型">4PL 拟合</div>
+        <div class="badge" title="离线">纯前端 · 无依赖</div>
+        <div class="badge" title="隐私">数据不上传</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <div class="title">
+            <h2>数据输入</h2>
+            <span>每行：浓度 响应1 响应2 …（支持 空格 / 逗号 / 制表符 分隔；可有表头/注释行）</span>
+          </div>
+          <div class="badge" title="提示">兼容：%Activity 或 %Inhibition</div>
+        </div>
+        <div class="bd">
+          <div class="hint">
+            示例（可直接粘贴）：<code>0.001  98 97</code> / <code>0.01  92 93</code> …<br/>
+            规则：浓度必须为正；同一行多个响应会取均值；可选择“同浓度跨行聚合”。<br/>
+            注释行：以 <code>#</code> 或 <code>//</code> 开头将被忽略；表头行（首列非数字）将被自动跳过。
+          </div>
+
+          <div style="margin-top:10px;">
+            <textarea id="data" spellcheck="false" placeholder="示例：
+Conc  Resp1 Resp2
+0.001  98  97
+0.01   92  93
+0.1    70  72
+1      38  40
+10     12  10
+"></textarea>
+          </div>
+
+          <div class="controls">
+            <div class="ctrl">
+              <label>浓度单位</label>
+              <input id="concUnit" type="text" value="µM" style="width:90px" />
+            </div>
+
+            <div class="ctrl">
+              <label>响应单位</label>
+              <select id="respUnit">
+                <option value="%">%</option>
+                <option value="a.u.">a.u.</option>
+              </select>
+            </div>
+
+            <div class="ctrl">
+              <label>约束</label>
+              <select id="constraint">
+                <option value="none">无</option>
+                <option value="0-100">Top=100, Bottom=0</option>
+                <option value="0-1">Top=1, Bottom=0</option>
+              </select>
+            </div>
+
+            <div class="ctrl">
+              <label>趋势（响应 vs 浓度）</label>
+              <select id="trend">
+                <option value="auto">自动判断</option>
+                <option value="decreasing">随浓度升高下降</option>
+                <option value="increasing">随浓度升高上升</option>
+              </select>
+            </div>
+
+            <div class="ctrl">
+              <label>X 轴</label>
+              <select id="xscale">
+                <option value="log10">log10(浓度)</option>
+                <option value="linear">线性(浓度)</option>
+              </select>
+            </div>
+
+            <label class="toggle" title="若同一浓度分多行输入（技术/生物重复），启用后会先按浓度聚合再拟合。">
+              <input id="aggSame" type="checkbox" checked />
+              <span>同浓度跨行聚合（推荐）</span>
+            </label>
+
+            <div class="btnrow" style="margin-left:auto;">
+              <button class="primary" id="calc">计算 IC50</button>
+              <button class="ghost" id="loadExample">载入示例</button>
+            </div>
+          </div>
+
+          <div class="foot">
+            模型：<code>y = Bottom + (Top-Bottom)/(1 + (x/IC50)^Hill)</code>（当前参数化：<code>Hill&gt;0</code> 常对应下降型；<code>Hill&lt;0</code> 常对应上升型）
+          </div>
+
+          <div id="inputNotice" class="notice"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <div class="title">
+            <h2>拟合结果</h2>
+            <span>包含拟合参数与质量指标；若存在外推/覆盖不足，会给出提示</span>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" id="copyResults" title="复制结果（文本）">复制结果</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="kv">
+            <div class="k">IC50</div><div id="outIC50" class="v">-</div>
+            <div class="k">log10(IC50)</div><div id="outLogIC50" class="v">-</div>
+            <div class="k">Hill</div><div id="outHill" class="v">-</div>
+            <div class="k">Top</div><div id="outTop" class="v">-</div>
+            <div class="k">Bottom</div><div id="outBottom" class="v">-</div>
+            <div class="k">拟合误差（SSE）</div><div id="outSSE" class="v">-</div>
+            <div class="k">RMSE</div><div id="outRMSE" class="v">-</div>
+            <div class="k">R²</div><div id="outR2" class="v">-</div>
+            <div class="k">数据点（聚合后）</div><div id="outN" class="v">-</div>
+            <div class="k">趋势判定</div><div id="outTrend" class="v">-</div>
+            <div class="k">IC50 范围</div><div id="outInterp" class="v">-</div>
+          </div>
+
+          <div id="fitNotice" class="notice"></div>
+
+          <div class="foot" style="margin-top:10px;">
+            建议：至少 6–8 个浓度点，并覆盖低效应与高效应两端；若数据未跨过 50% 效应水平，IC50 常为外推，可信度降低。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card plotcard" style="margin-top:14px;">
+      <div class="hd">
+        <div class="title">
+          <h2>拟合图</h2>
+          <span>散点：数据均值；曲线：4PL 拟合；虚线：IC50；可导出 PNG</span>
+        </div>
+        <div class="btnrow">
+          <button class="ghost" id="downloadPng">下载 PNG</button>
+        </div>
+      </div>
+      <div class="bd">
+        <canvas id="plot" width="1400" height="580"></canvas>
+        <div class="foot">
+          提示：X轴显示可选 log/线性；拟合始终基于原始浓度值（4PL）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const el = (id) => document.getElementById(id);
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function mean(arr){ return arr.reduce((a,b)=>a+b,0) / Math.max(arr.length, 1); }
+
+  function extractNumber(token){
+    // Extract first float/scientific number from token, e.g. "10uM" -> 10, "1e-3" -> 1e-3
+    const m = String(token).match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/i);
+    if(!m) return NaN;
+    return Number(m[0]);
+  }
+
+  function parseData(text, opts){
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(s => s.length>0);
+    const rows = [];
+    const skipped = [];
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if(/^#/.test(line) || /^\/\//.test(line)) continue; // comment line
+      const parts = line.split(/[\t, ]+/).filter(Boolean);
+      if(parts.length < 2){ skipped.push({i:i+1, line, reason:"列数不足"}); continue; }
+
+      const x = extractNumber(parts[0]);
+      if(!isFinite(x) || x<=0){
+        // likely header or invalid conc
+        // If first token has no number, treat as header and skip silently
+        if(!String(parts[0]).match(/[-+]?\d/)){
+          continue;
+        }
+        skipped.push({i:i+1, line, reason:"浓度无效或<=0"}); 
+        continue;
+      }
+
+      const ys = parts.slice(1).map(extractNumber).filter(v => isFinite(v));
+      if(ys.length===0){ skipped.push({i:i+1, line, reason:"响应值缺失/无效"}); continue; }
+      const y = mean(ys);
+      rows.push({x, y, n: ys.length});
+    }
+
+    if(rows.length===0){
+      return {data:[], info:{skipped}};
+    }
+
+    // optionally aggregate same concentration across rows
+    let data = rows;
+    if(opts && opts.aggregateSameX){
+      const map = new Map();
+      for(const r of rows){
+        const key = Number(r.x).toPrecision(12);
+        if(!map.has(key)){
+          map.set(key, {x:r.x, sumY:r.y*r.n, n:r.n, rows:1});
+        }else{
+          const g = map.get(key);
+          g.sumY += r.y*r.n;
+          g.n += r.n;
+          g.rows += 1;
+        }
+      }
+      data = Array.from(map.values()).map(g => ({x:g.x, y:g.sumY/g.n, n:g.n, rows:g.rows}))
+                  .sort((a,b)=>a.x-b.x);
+    }else{
+      data = rows.sort((a,b)=>a.x-b.x);
+    }
+
+    return {data, info:{skipped}};
+  }
+
+  function linspace(a,b,n){
+    if(n<=1) return [a];
+    const out = [];
+    const step = (b-a)/(n-1);
+    for(let i=0;i<n;i++) out.push(a + step*i);
+    return out;
+  }
+
+  function y4pl(x, p){
+    // y = bottom + (top-bottom)/(1 + (x/ic50)^hill)
+    const t = Math.pow(x / p.ic50, p.hill);
+    return p.bottom + (p.top - p.bottom) / (1 + t);
+  }
+
+  function sse4pl(data, p){
+    let sse = 0;
+    for(const pt of data){
+      const yhat = y4pl(pt.x, p);
+      const e = (pt.y - yhat);
+      sse += e*e;
+    }
+    return sse;
+  }
+
+  function corrLogxY(data){
+    const logx = data.map(d=>Math.log10(d.x));
+    const ys = data.map(d=>d.y);
+    const mx = mean(logx), my = mean(ys);
+    let cov=0, vx=0, vy=0;
+    for(let i=0;i<data.length;i++){
+      cov += (logx[i]-mx)*(ys[i]-my);
+      vx  += (logx[i]-mx)*(logx[i]-mx);
+      vy  += (ys[i]-my)*(ys[i]-my);
+    }
+    const denom = Math.sqrt(Math.max(vx*vy, 1e-12));
+    return cov / denom;
+  }
+
+  function fit4pl(data, constraintMode, trendMode){
+    if(data.length < 4) throw new Error("数据点少于 4 个，4PL 拟合通常不稳定。建议至少 6 个浓度点。");
+
+    const ys = data.map(p=>p.y);
+    const xs = data.map(p=>p.x);
+    const yMin = Math.min(...ys);
+    const yMax = Math.max(...ys);
+
+    const corr = corrLogxY(data);
+    let decreasingAuto = corr < 0;
+    let decreasing;
+    if(trendMode === "decreasing") decreasing = true;
+    else if(trendMode === "increasing") decreasing = false;
+    else decreasing = decreasingAuto;
+
+    // initial top/bottom
+    let top0 = yMax;
+    let bottom0 = yMin;
+
+    if(constraintMode === "0-100"){
+      top0 = 100; bottom0 = 0;
+    } else if(constraintMode === "0-1"){
+      top0 = 1; bottom0 = 0;
+    } else {
+      const pad = 0.05 * (yMax - yMin || 1);
+      top0 = yMax + pad;
+      bottom0 = yMin - pad;
+    }
+
+    const xMin = Math.min(...xs);
+    const xMax = Math.max(...xs);
+
+    // NOTE: allow mild extrapolation; too wide hurts search efficiency
+    let ic50Lo = xMin / 10;
+    let ic50Hi = xMax * 10;
+
+    // hill magnitude
+    let hillMagLo = 0.1, hillMagHi = 5;
+
+    let topLo = top0, topHi = top0;
+    let bottomLo = bottom0, bottomHi = bottom0;
+    if(constraintMode === "none"){
+      const ySpan = (yMax - yMin) || 1;
+      topLo = yMax - 0.6*ySpan;
+      topHi = yMax + 0.6*ySpan;
+      bottomLo = yMin - 0.6*ySpan;
+      bottomHi = yMin + 0.6*ySpan;
+    }
+
+    function hillCandidates(n, signPolicy){
+      const mags = linspace(hillMagLo, hillMagHi, n).filter(m=>m>0.05);
+      if(signPolicy === "both"){
+        return mags.flatMap(m => [m, -m]);
+      }
+      if(signPolicy === "decreasing") return mags;       // +m
+      return mags.map(m => -m);                          // increasing -> -m
+    }
+
+    // Trend enforcement policy:
+    // - If user forced trend: enforce corresponding hill sign.
+    // - If auto: try both signs (but keep "decreasingAuto" for reporting).
+    const signPolicy = (trendMode === "auto") ? "both" : (decreasing ? "decreasing" : "increasing");
+
+    let best = {top: top0, bottom: bottom0, ic50: Math.sqrt(xMin*xMax), hill: decreasing ? 1 : -1};
+    let bestSSE = sse4pl(data, best);
+
+    const rounds = [
+      {nTop: (constraintMode==="none")?9:1, nBottom:(constraintMode==="none")?9:1, nIC50:25, nHill:25, shrink:0.30},
+      {nTop: (constraintMode==="none")?9:1, nBottom:(constraintMode==="none")?9:1, nIC50:23, nHill:23, shrink:0.22},
+      {nTop: (constraintMode==="none")?7:1, nBottom:(constraintMode==="none")?7:1, nIC50:21, nHill:21, shrink:0.18},
+    ];
+
+    for(const r of rounds){
+      const tops = (constraintMode==="none") ? linspace(topLo, topHi, r.nTop) : [top0];
+      const bottoms = (constraintMode==="none") ? linspace(bottomLo, bottomHi, r.nBottom) : [bottom0];
+
+      const lic50Lo = Math.log10(ic50Lo);
+      const lic50Hi = Math.log10(ic50Hi);
+      const ic50s = linspace(lic50Lo, lic50Hi, r.nIC50).map(v=>Math.pow(10,v)).filter(v=>isFinite(v) && v>0);
+      const hills = hillCandidates(r.nHill, signPolicy);
+
+      for(const top of tops){
+        for(const bottom of bottoms){
+          if(Math.abs(top-bottom) < 1e-12) continue;
+          for(const ic50 of ic50s){
+            for(const hill of hills){
+              const p = {top, bottom, ic50, hill};
+              const sse = sse4pl(data, p);
+              if(sse < bestSSE){
+                bestSSE = sse;
+                best = p;
+              }
+            }
+          }
+        }
+      }
+
+      // shrink ranges around best
+      function shrinkRange(lo, hi, center, frac){
+        const span = (hi - lo);
+        const half = span * frac / 2;
+        return [center - half, center + half];
+      }
+
+      if(constraintMode === "none"){
+        [topLo, topHi] = shrinkRange(topLo, topHi, best.top, r.shrink);
+        [bottomLo, bottomHi] = shrinkRange(bottomLo, bottomHi, best.bottom, r.shrink);
+      }
+
+      const lLo = Math.log10(ic50Lo), lHi = Math.log10(ic50Hi), lC = Math.log10(best.ic50);
+      let [nlLo, nlHi] = shrinkRange(lLo, lHi, lC, r.shrink);
+      ic50Lo = Math.pow(10, nlLo);
+      ic50Hi = Math.pow(10, nlHi);
+
+      // keep within reasonable bounds
+      ic50Lo = Math.max(ic50Lo, xMin/1e6);
+      ic50Hi = Math.min(ic50Hi, xMax*1e6);
+      hillMagLo = clamp(hillMagLo, 0.05, 12);
+      hillMagHi = clamp(hillMagHi, 0.2, 12);
+    }
+
+    // Determine final "trend" label based on best hill sign (more robust than corr)
+    const decreasingByFit = best.hill > 0;
+
+    return {
+      ...best,
+      sse: bestSSE,
+      corr,
+      decreasingAuto,
+      decreasingByFit
+    };
+  }
+
+  function formatSig(x, sig=4){
+    if(!isFinite(x)) return "-";
+    if(x === 0) return "0";
+    const abs = Math.abs(x);
+    if(abs >= 1e4 || abs < 1e-3) return x.toExponential(sig-1);
+    return Number(x.toPrecision(sig)).toString();
+  }
+
+  function calcMetrics(data, fit){
+    const ys = data.map(d=>d.y);
+    const ybar = mean(ys);
+    let ssTot = 0;
+    let ssRes = 0;
+    for(const d of data){
+      const yhat = y4pl(d.x, fit);
+      const e = d.y - yhat;
+      ssRes += e*e;
+      const t = d.y - ybar;
+      ssTot += t*t;
+    }
+    const n = data.length;
+    const rmse = Math.sqrt(ssRes / Math.max(n, 1));
+    let r2 = 1 - ssRes / Math.max(ssTot, 1e-12);
+    // for nearly constant data, r2 can be meaningless; clamp to [-inf,1]
+    if(!isFinite(r2)) r2 = NaN;
+    return {rmse, r2, ssTot, ssRes};
+  }
+
+  function crossesMidEffect(data, constraintMode){
+    // Determine if data crosses "mid effect" level.
+    // If constraint fixed:
+    //  - 0-100 -> mid=50
+    //  - 0-1 -> mid=0.5
+    // Else use (min+max)/2
+    const ys = data.map(d=>d.y);
+    const yMin = Math.min(...ys);
+    const yMax = Math.max(...ys);
+    let mid;
+    if(constraintMode === "0-100") mid = 50;
+    else if(constraintMode === "0-1") mid = 0.5;
+    else mid = (yMin + yMax) / 2;
+
+    let above=false, below=false;
+    for(const y of ys){
+      if(y >= mid) above=true;
+      if(y <= mid) below=true;
+    }
+    return {mid, crosses: above && below};
+  }
+
+  function buildWarnings(data, fit, constraintMode){
+    const warnings = [];
+    const xs = data.map(d=>d.x);
+    const xMin = Math.min(...xs);
+    const xMax = Math.max(...xs);
+
+    const ic50 = fit.ic50;
+    const inRange = (ic50 >= xMin && ic50 <= xMax);
+
+    if(!inRange){
+      warnings.push({level:"warn", text:`IC50=${formatSig(ic50)} 超出实验浓度范围 [${formatSig(xMin)}, ${formatSig(xMax)}]（可能为外推，可信度降低）`});
+    }else{
+      warnings.push({level:"ok", text:`IC50 位于实验浓度范围内（插值）`});
+    }
+
+    const mid = crossesMidEffect(data, constraintMode);
+    if(!mid.crosses){
+      warnings.push({level:"warn", text:`数据未跨过 50%（或中间效应）水平（≈${formatSig(mid.mid)}），IC50 往往不稳定/外推`});
+    }
+
+    if(constraintMode === "0-100"){
+      const ys = data.map(d=>d.y);
+      const tooHigh = ys.some(y=>y>110);
+      const tooLow = ys.some(y=>y<-10);
+      if(tooHigh || tooLow){
+        warnings.push({level:"warn", text:`当前选择 Top=100/Bottom=0，但数据存在明显超出 0–100 的值（建议检查归一化或取消约束）`});
+      }
+    } else if(constraintMode === "0-1"){
+      const ys = data.map(d=>d.y);
+      const tooHigh = ys.some(y=>y>1.1);
+      const tooLow = ys.some(y=>y<-0.1);
+      if(tooHigh || tooLow){
+        warnings.push({level:"warn", text:`当前选择 Top=1/Bottom=0，但数据存在明显超出 0–1 的值（建议检查归一化或取消约束）`});
+      }
+    }
+
+    return {inRange, xMin, xMax, warnings};
+  }
+
+  function drawPlot(canvas, data, fit, xscale, constraintMode){
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,W,H);
+
+    // layout
+    const ml = 110, mr = 28, mt = 18, mb = 76;
+    const pw = W - ml - mr;
+    const ph = H - mt - mb;
+
+    const xs = data.map(p=>p.x);
+    const ys = data.map(p=>p.y);
+    const xMin = Math.min(...xs);
+    const xMax = Math.max(...xs);
+
+    // x transform for plotting
+    const xTx = (x) => (xscale==="log10") ? Math.log10(x) : x;
+    const xLabel = (xscale==="log10") ? "log10(浓度)" : "浓度";
+
+    const xMinP = xTx(xMin);
+    const xMaxP = xTx(xMax);
+
+    // y range with padding
+    let yMin = Math.min(...ys);
+    let yMax = Math.max(...ys);
+    const pad = 0.08 * (yMax-yMin || 1);
+    yMin -= pad; yMax += pad;
+
+    const X = (x) => ml + ( (xTx(x) - xMinP) / Math.max((xMaxP-xMinP), 1e-12) ) * pw;
+    const Y = (y) => mt + (1 - (y - yMin) / Math.max((yMax-yMin), 1e-12)) * ph;
+
+    // axes
+    ctx.strokeStyle = "rgba(15,23,42,0.20)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ml, mt);
+    ctx.lineTo(ml, mt+ph);
+    ctx.lineTo(ml+pw, mt+ph);
+    ctx.stroke();
+
+    // grid lines
+    ctx.strokeStyle = "rgba(15,23,42,0.08)";
+    ctx.lineWidth = 1;
+    const nGridY = 5;
+    for(let i=1;i<nGridY;i++){
+      const yy = mt + ph * (i/nGridY);
+      ctx.beginPath();
+      ctx.moveTo(ml, yy);
+      ctx.lineTo(ml+pw, yy);
+      ctx.stroke();
+    }
+
+    // reference lines: top/bottom if constrained, plus mid-level
+    function drawHLine(y, label){
+      ctx.setLineDash([6,6]);
+      ctx.strokeStyle = "rgba(15,23,42,0.25)";
+      ctx.beginPath();
+      ctx.moveTo(ml, Y(y));
+      ctx.lineTo(ml+pw, Y(y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(15,23,42,0.75)";
+      ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText(label, ml+8, Y(y)-6);
+    }
+
+    if(constraintMode === "0-100"){
+      drawHLine(100, "Top=100");
+      drawHLine(0, "Bottom=0");
+      drawHLine(50, "50%");
+    }else if(constraintMode === "0-1"){
+      drawHLine(1, "Top=1");
+      drawHLine(0, "Bottom=0");
+      drawHLine(0.5, "50%");
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    // curve samples: sample in plotting space for smoother log view
+    const nCurve = 300;
+    const xVals = [];
+    if(xscale==="log10"){
+      const l0 = Math.log10(xMin);
+      const l1 = Math.log10(xMax);
+      for(let i=0;i<nCurve;i++){
+        const l = l0 + (l1-l0)*i/(nCurve-1);
+        xVals.push(Math.pow(10,l));
+      }
+    }else{
+      for(let i=0;i<nCurve;i++){
+        xVals.push(xMin + (xMax-xMin)*i/(nCurve-1));
+      }
+    }
+
+    // draw curve
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = "rgba(79,70,229,0.95)";
+    ctx.beginPath();
+    for(let i=0;i<xVals.length;i++){
+      const xv = xVals[i];
+      const yv = y4pl(xv, fit);
+      const px = X(xv), py = Y(yv);
+      if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // IC50 vertical line
+    ctx.setLineDash([6,6]);
+    ctx.strokeStyle = "rgba(22,163,74,0.9)";
+    ctx.lineWidth = 2;
+    const xic = X(fit.ic50);
+    ctx.beginPath();
+    ctx.moveTo(xic, mt);
+    ctx.lineTo(xic, mt+ph);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // data points
+    ctx.fillStyle = "rgba(15,23,42,0.95)";
+    for(const p of data){
+      const px = X(p.x), py = Y(p.y);
+      ctx.beginPath();
+      ctx.arc(px, py, 4.2, 0, Math.PI*2);
+      ctx.fill();
+      // outline
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // axis labels and ticks
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+
+    // y ticks
+    const nYTicks = 5;
+    ctx.save();
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for(let i=0;i<=nYTicks;i++){
+      const yv = yMin + (yMax-yMin)*i/nYTicks;
+      const py = Y(yv);
+      ctx.fillText(formatSig(yv,4), ml-10, py);
+    }
+    ctx.restore();
+
+    // x ticks
+    const nXTicks = 6;
+    for(let i=0;i<=nXTicks;i++){
+      const xv = (xscale==="log10")
+        ? Math.pow(10, Math.log10(xMin) + (Math.log10(xMax)-Math.log10(xMin))*i/nXTicks)
+        : (xMin + (xMax-xMin)*i/nXTicks);
+      const px = X(xv);
+      const label = (xscale==="log10") ? formatSig(xv,3) : formatSig(xv,4);
+      ctx.fillText(label, px-10, mt+ph+22);
+      ctx.strokeStyle = "rgba(15,23,42,0.18)";
+      ctx.beginPath();
+      ctx.moveTo(px, mt+ph);
+      ctx.lineTo(px, mt+ph+6);
+      ctx.stroke();
+    }
+
+    // labels
+    ctx.fillText(xLabel, ml + pw/2 - 30, mt+ph+52);
+    ctx.save();
+    ctx.translate(16, mt + ph/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("响应", 0, 0);
+    ctx.restore();
+
+    // legend (top-right, avoid overlapping data)
+    const lgX = ml + pw - 170;
+    const lgY = mt + 10;
+    const lgW = 160;
+    const lgH = 64;
+
+    // background
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.strokeStyle = "rgba(15,23,42,0.12)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, lgX, lgY, lgW, lgH, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    // 4PL
+    ctx.fillStyle = "rgba(79,70,229,0.95)";
+    ctx.fillRect(lgX+10, lgY+12, 12, 12);
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    ctx.fillText("4PL 拟合", lgX+30, lgY+18);
+
+    // IC50
+    ctx.setLineDash([6,6]);
+    ctx.strokeStyle = "rgba(22,163,74,0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lgX+10, lgY+34);
+    ctx.lineTo(lgX+22, lgY+34);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    ctx.fillText("IC50", lgX+30, lgY+34);
+
+    // points
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    ctx.fillText("● 数据点", lgX+10, lgY+54);
+    ctx.restore();
+  }
+
+  function downloadCanvasPng(canvas, filename){
+    const a = document.createElement("a");
+    a.download = filename;
+    a.href = canvas.toDataURL("image/png");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function setNotice(target, html, level){
+    if(!html){
+      target.classList.remove("show","danger");
+      target.innerHTML = "";
+      return;
+    }
+    target.classList.add("show");
+    target.classList.toggle("danger", level==="danger");
+    target.innerHTML = html;
+  }
+
+  function init(){
+    const ta = el("data");
+    const btnCalc = el("calc");
+    const btnExample = el("loadExample");
+    const btnPng = el("downloadPng");
+    const btnCopy = el("copyResults");
+
+    const out = {
+      ic50: el("outIC50"),
+      logic50: el("outLogIC50"),
+      hill: el("outHill"),
+      top: el("outTop"),
+      bottom: el("outBottom"),
+      sse: el("outSSE"),
+      rmse: el("outRMSE"),
+      r2: el("outR2"),
+      n: el("outN"),
+      trend: el("outTrend"),
+      interp: el("outInterp")
+    };
+
+    const plot = el("plot");
+    const inputNotice = el("inputNotice");
+    const fitNotice = el("fitNotice");
+
+    function loadExample(){
+      ta.value =
+`Conc  Resp1 Resp2
+0.001  98  97
+0.01   92  93
+0.1    70  72
+1      38  40
+10     12  10`;
+    }
+
+    function compute(){
+      setNotice(inputNotice, "", null);
+      setNotice(fitNotice, "", null);
+
+      const concUnit = el("concUnit").value || "";
+      const respUnit = el("respUnit").value || "";
+      const constraint = el("constraint").value;
+      const xscale = el("xscale").value;
+      const trendMode = el("trend").value;
+      const aggregateSameX = !!el("aggSame").checked;
+
+      const parsed = parseData(ta.value, {aggregateSameX});
+      const data = parsed.data;
+      const skipped = parsed.info.skipped || [];
+
+      if(skipped.length>0){
+        const show = skipped.slice(0, 6).map(s => `第 ${s.i} 行：${escapeHtml(s.reason)}<br/><code style="display:block;margin-top:4px;white-space:pre-wrap;">${escapeHtml(s.line)}</code>`).join("<br/>");
+        const more = skipped.length>6 ? `<br/>…另有 ${skipped.length-6} 行被忽略` : "";
+        setNotice(inputNotice, `以下行未被纳入计算（不一定是错误，可能是表头/无效行）：<br/><br/>${show}${more}`, "warn");
+      }
+
+      if(data.length < 4){
+        throw new Error("有效数据点少于 4 个，无法进行 4PL 拟合。请检查输入、分隔符或是否被过多忽略。");
+      }
+
+      const fit = fit4pl(data, constraint, trendMode);
+      const metrics = calcMetrics(data, fit);
+      const warn = buildWarnings(data, fit, constraint);
+
+      out.ic50.textContent = `${formatSig(fit.ic50, 4)} ${concUnit}`.trim();
+      out.logic50.textContent = formatSig(Math.log10(fit.ic50), 4);
+      out.hill.textContent = formatSig(fit.hill, 4);
+      out.top.textContent = `${formatSig(fit.top, 4)} ${respUnit}`.trim();
+      out.bottom.textContent = `${formatSig(fit.bottom, 4)} ${respUnit}`.trim();
+      out.sse.textContent = formatSig(fit.sse, 5);
+      out.rmse.textContent = formatSig(metrics.rmse, 4);
+      out.r2.textContent = isFinite(metrics.r2) ? formatSig(metrics.r2, 4) : "-";
+      out.n.textContent = String(data.length);
+
+      const trendLabel = (fit.decreasingByFit ? "下降型（Hill>0）" : "上升型（Hill<0）");
+      const trendSrc = (trendMode==="auto") ? `自动（corr=${formatSig(fit.corr,3)}）` : "手动指定";
+      out.trend.textContent = `${trendLabel} · ${trendSrc}`;
+
+      out.interp.textContent = warn.inRange ? "插值（在范围内）" : "外推（超出范围）";
+
+      // show warnings
+      const warnLines = warn.warnings
+        .filter(w => w.level !== "ok")
+        .map(w => `• ${escapeHtml(w.text)}`)
+        .join("<br/>");
+      if(warnLines){
+        setNotice(fitNotice, `<b>提示：</b><br/>${warnLines}`, "warn");
+      }
+
+      drawPlot(plot, data, fit, xscale, constraint);
+
+      // store last result for copy/export
+      window.__ic50_last = {data, fit, metrics, warn, concUnit, respUnit, constraint, trendMode, aggregateSameX};
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function copyResults(){
+      const last = window.__ic50_last;
+      if(!last){
+        navigator.clipboard?.writeText("尚无结果。请先计算 IC50。");
+        return;
+      }
+      const {fit, metrics, warn, concUnit, respUnit, constraint, trendMode, aggregateSameX} = last;
+      const xMin = warn.xMin, xMax = warn.xMax;
+      const lines = [
+        "IC50 4PL 拟合结果",
+        "-----------------",
+        `IC50: ${formatSig(fit.ic50,4)} ${concUnit}`.trim(),
+        `log10(IC50): ${formatSig(Math.log10(fit.ic50),4)}`,
+        `Hill: ${formatSig(fit.hill,4)}`,
+        `Top: ${formatSig(fit.top,4)} ${respUnit}`.trim(),
+        `Bottom: ${formatSig(fit.bottom,4)} ${respUnit}`.trim(),
+        `SSE: ${formatSig(fit.sse,5)}`,
+        `RMSE: ${formatSig(metrics.rmse,4)}`,
+        `R²: ${isFinite(metrics.r2) ? formatSig(metrics.r2,4) : "-"}`,
+        `浓度范围: [${formatSig(xMin,4)}, ${formatSig(xMax,4)}] ${concUnit}`.trim(),
+        `IC50范围判定: ${warn.inRange ? "插值" : "外推"}`,
+        `约束: ${constraint}`,
+        `趋势: ${trendMode}`,
+        `同浓度跨行聚合: ${aggregateSameX ? "是" : "否"}`
+      ];
+      const txt = lines.join("\n");
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt);
+      }else{
+        // fallback
+        const t = document.createElement("textarea");
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand("copy");
+        document.body.removeChild(t);
+      }
+    }
+
+    // events
+    btnCalc.addEventListener("click", ()=>{
+      try{ compute(); }
+      catch(err){
+        setNotice(fitNotice, `<b>错误：</b> ${String(err.message || err)}`, "danger");
+      }
+    });
+
+    btnExample.addEventListener("click", ()=>{
+      loadExample();
+      el("calc").click();
+    });
+
+    btnPng.addEventListener("click", ()=>{
+      const last = window.__ic50_last;
+      if(!last){
+        setNotice(fitNotice, "请先计算后再导出 PNG。", "warn");
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+      downloadCanvasPng(plot, `ic50-fit-${stamp}.png`);
+    });
+
+    btnCopy.addEventListener("click", ()=>{
+      copyResults();
+    });
+
+    ta.addEventListener("keydown", (e)=>{
+      if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+        e.preventDefault();
+        btnCalc.click();
+      }else if(e.key === "Enter" && !e.shiftKey){
+        // Optional: press Enter to compute if focus is not within a multiline intention.
+        // Keep conservative: require Ctrl/Cmd+Enter only.
+      }
+    });
+
+    // 默认不加载示例数据，保持输入框为空
+    // 如需示例，请点击“载入示例”按钮
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
