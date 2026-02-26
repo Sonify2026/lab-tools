@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>摩尔计算器</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --danger:#dc2626;
+      --ok:#16a34a;
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: var(--bg);
+      color:var(--text);
+      line-height:1.45;
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:24px 16px 40px;
+    }
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:12px;
+    }
+    .brand h1{ margin:0 0 6px 0; font-size:20px; letter-spacing:.2px; }
+    .brand p{ margin:0; color:var(--muted); font-size:13px; }
+    .pillrow{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+    }
+    .pill{
+      border:1px solid var(--border);
+      background: var(--panel);
+      padding:10px 12px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .pill label{ color:var(--muted); font-size:12px; white-space:nowrap; }
+    select, input[type="text"], input[type="number"]{
+      background:#fff;
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:9px 10px;
+      border-radius:10px;
+      outline:none;
+      font-size:14px;
+    }
+    select:focus, input:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    input[type="number"]{ width: 100%; min-width:0; }
+    input[type="text"]{ width: 330px; font-family:var(--mono); }
+    .tabs{
+      display:flex; gap:10px; margin:14px 0 14px; flex-wrap:wrap;
+    }
+    .tab{
+      cursor:pointer; user-select:none; padding:9px 12px; border-radius:999px;
+      border:1px solid var(--border); background:#fff; color:var(--muted);
+      font-size:13px; transition: all .12s ease;
+    }
+    .tab[aria-selected="true"]{
+      border-color: rgba(37,99,235,.55);
+      background: rgba(37,99,235,.06);
+      color: var(--text);
+    }
+    .grid{
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+    }
+    
+      input[type="text"]{ width:100%; }
+      input[type="number"]{ width:100%; }
+    }
+    .card{
+      width:100%;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px 10px;
+      border-bottom:1px solid var(--border);
+      background: #fafafa;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .card .hd h2{ margin:0; font-size:15px; letter-spacing:.2px; }
+    .card .hd .sub{ margin:2px 0 0 0; color:var(--muted); font-size:12px; }
+    .card .bd{ padding:14px 16px 16px; }
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;
+    }
+    /* 对齐优化：基础换算中“化学式 + 已知量”使用两列网格，避免因提示文本导致右侧下拉错位 */
+    .row.formula-row{
+      display:grid;
+      grid-template-columns: 1fr 180px;
+      gap:12px;
+      align-items:start;
+    }
+    @media (max-width: 700px){
+      .row.formula-row{ grid-template-columns: 1fr; }
+    }
+
+    /* 对齐优化：输入框 + 单位/固定标签保持同一行，不换行 */
+    .inline{
+      display:flex;
+      gap:10px;
+      flex-wrap:nowrap;
+      align-items:center;
+      margin:0;
+    }
+    .inline > input{ flex:1; width:auto; min-width:0; }
+    .inline > select{ width:96px; }
+    .inline > .badge{ min-width:64px; text-align:center; }
+
+    /* 溶液模式保持紧凑宽度 */
+    .sol-input input{ width:190px; }
+    .field{
+      display:flex; flex-direction:column; gap:6px;
+      min-width: 220px; flex: 1;
+    }
+    .field.small{ min-width: 160px; flex: 0 1 auto; }
+    .field label{ color:var(--muted); font-size:12px; display:flex; align-items:center; gap:8px; }
+    .hint{ color:var(--muted); font-size:12px; margin-top:2px; }
+    button{
+      cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--text);
+      padding:9px 12px; border-radius:12px; font-size:13px; transition: all .12s ease;
+    }
+    button.primary{ border-color: rgba(37,99,235,.55); background: rgba(37,99,235,.08); }
+    button:hover{ background:#f8fafc; }
+    button.primary:hover{ background: rgba(37,99,235,.10); }
+    .status{
+      margin-top:10px; padding:10px 12px; border-radius:12px;
+      border:1px solid var(--border); background:#fff; font-size:13px; color:var(--muted);
+      display:none;
+    }
+    .status.show{ display:block; }
+    .status.err{ border-color: rgba(220,38,38,.45); color:#991b1b; background: rgba(220,38,38,.05); }
+    .status.ok{ border-color: rgba(22,163,74,.45); color:#14532d; background: rgba(22,163,74,.05); }
+    .kpi{
+      display:grid; grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:12px; margin-bottom:12px;
+    }
+    .kpi .box{
+      border:1px solid var(--border); background:#fff; border-radius: 12px; padding:12px 12px;
+      overflow:hidden;
+    }
+    .kpi .t{ color:var(--muted); font-size:12px; margin-bottom:6px; }
+    .kpi .v{ font-family: var(--mono); font-size:18px; letter-spacing:.2px; }
+    .kpi .u{ color:var(--muted); font-size:12px; margin-top:6px; }
+    .mono{ font-family: var(--mono); }
+    details{
+      border:1px solid var(--border); border-radius: 12px; background:#fff; overflow:hidden;
+    }
+    details summary{
+      cursor:pointer; padding:12px 12px; color:var(--text); font-size:13px;
+      user-select:none; list-style:none; background:#fff;
+    }
+    details summary::-webkit-details-marker{ display:none; }
+    details .inner{ padding:0 12px 12px; }
+    table{ width:100%; border-collapse:collapse; font-size:13px; overflow:hidden; }
+    th, td{ padding:9px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+    th{ color:var(--muted); font-weight:600; background:#fafafa; }
+    tr:last-child td{ border-bottom:none; }
+    .badge{
+      display:inline-flex; align-items:center; gap:6px; padding:3px 9px;
+      border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--muted);
+      font-size:12px; white-space:nowrap;
+    }
+    .footer{
+      margin-top:16px; color:var(--muted); font-size:12px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    }
+    .muted{ color:var(--muted); }
+    .split{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .history{ display:flex; flex-direction:column; gap:8px; }
+    .hist-item{
+      border:1px solid var(--border); background:#fff; border-radius: 12px; padding:10px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .hist-item .left{ min-width:0; }
+    .hist-item .left .a{ font-family:var(--mono); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hist-item .left .b{ color:var(--muted); font-size:12px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hist-item .right{ display:flex; gap:8px; flex:0 0 auto; }
+  
+    /* --- Solution linear formula layout --- */
+    .sol-eq{
+      display:flex;
+      align-items:flex-end;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .sol-term{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 210px;
+      flex: 1 1 210px;
+    }
+    .sol-term .sol-input{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .sol-op{
+      font-size:18px;
+      color: var(--muted);
+      padding: 0 2px;
+      margin-bottom: 14px; /* align with input baseline */
+      user-select:none;
+    }
+    .sol-unit{
+      color: var(--muted);
+      font-size:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      padding:9px 10px;
+      border-radius:10px;
+      line-height:1;
+      white-space:nowrap;
+    }
+    @media (max-width: 940px){
+      .sol-op{ display:none; } /* mobile: hide operators to reduce clutter */
+      .sol-eq{ gap:10px; }
+    }
+
+
+    /* 对齐优化：高级设置内的两列控件对齐（避免一侧有 hint 导致下拉错位） */
+    #advBasic .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      align-items:start;
+      margin-top:10px;
+    }
+    @media (max-width: 700px){
+      #advBasic .row{ grid-template-columns: 1fr; }
+    }
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>摩尔计算器 <span class="badge">简洁离线</span></h1>
+        <p>基础换算支持化学式解析；溶液浓度模式改为 <span class="mono">质量 m、浓度 C、体积 V、分子量 MW</span> 四量互算（含微量单位）。</p>
+      </div>
+      <div class="pillrow">
+        <div class="pill">
+          <label for="fmt">输出格式</label>
+          <select id="fmt">
+            <option value="sig">有效数字</option>
+            <option value="fix">小数位</option>
+          </select>
+          <select id="fmtN">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="模式切换">
+      <div class="tab" role="tab" tabindex="0" data-tab="basic" aria-selected="true">基础换算（M / m / n）</div>
+      <div class="tab" role="tab" tabindex="-1" data-tab="solution" aria-selected="false">溶液浓度（m / C / V / MW）</div>
+      <div class="tab" role="tab" tabindex="-1" data-tab="about" aria-selected="false">说明与数据</div>
+    </nav>
+
+    <div class="grid">
+      <!-- INPUT -->
+      <section class="card" id="cardInput">
+        <div class="hd">
+          <div>
+            <h2 id="inputTitle">输入</h2>
+            <div class="sub" id="inputSub">输入化学式与已知量，结果会实时更新（也可手动点击计算）。</div>
+          </div>
+          <div class="split">
+            <button id="btnCalc" class="primary">计算</button>
+            <button id="btnReset">重置</button>
+          </div>
+        </div>
+        <div class="bd">
+          <!-- BASIC PANEL -->
+          <div class="panel" data-panel="basic">
+            <div class="row formula-row">
+              <div class="field">
+                <label for="formula">化学式（支持括号/水合点） <span class="badge">必填</span></label>
+                <input id="formula" type="text" placeholder="例如：H2O / Ca(OH)2 / CuSO4·5H2O" autocomplete="off" />
+                <div class="hint">提示：水合物点可用“·”或“.”；电荷如 SO4^2- 会被忽略（可在高级设置改为严格）。</div>
+              </div>
+              <div class="field small">
+                <label for="known">已知量</label>
+                <select id="known">
+                  <option value="m">质量 m</option>
+                  <option value="n">物质的量 n</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" id="basicRowM">
+              <div class="field">
+                <label for="mass">质量 m</label>
+                <div class="inline">
+                  <input id="mass" type="number" min="0" step="any" placeholder="例如：5" />
+                  <select id="massUnit">
+                    <option value="g" selected>g</option>
+                    <option value="mg">mg</option>
+                    <option value="ug">μg</option>
+                    <option value="ng">ng</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" id="basicRowN" style="display:none">
+                <label for="moles">物质的量 n</label>
+                <div class="inline">
+                  <input id="moles" type="number" min="0" step="any" placeholder="例如：0.25" />
+                  <span class="badge">mol</span>
+                </div>
+              </div>
+            </div>
+
+            <details id="advBasic">
+              <summary>高级：设置（可选）</summary>
+              <div class="inner">
+                <div class="row">
+                  <div class="field">
+                    <label for="ignoreCharge">电荷/符号处理</label>
+                    <select id="ignoreCharge">
+                      <option value="on" selected>忽略 ^2- / + 等电荷与空格</option>
+                      <option value="off">严格：遇到电荷直接报错</option>
+                    </select>
+                    <div class="hint">摩尔质量通常不受电荷影响，默认忽略可提高容错。</div>
+                  </div>
+                  <div class="field">
+                    <label for="dotMode">水合点模式</label>
+                    <select id="dotMode">
+                      <option value="auto" selected>自动识别“·”与“.”</option>
+                      <option value="dot">仅“·”</option>
+                      <option value="period">仅“.”</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div id="statusBasic" class="status"></div>
+          </div>
+
+          <!-- SOLUTION PANEL -->
+          <div class="panel" data-panel="solution" style="display:none">
+            <div class="row">
+              <div class="field">
+                <div class="hint" style="margin-top:0">
+                  规则：四个量 <span class="mono">m, C, V, MW</span> 中 <b>留空 1 个</b>，其余 3 个填正数，系统自动求解留空项（并自动选择合适单位）。
+                  关系式：<span class="mono">m = C·V·MW</span>（内部统一换算单位）。
+                </div>
+              </div>
+            </div>
+
+            <div class="sol-eq" aria-label="溶液浓度线性公式">
+              <div class="sol-term">
+                <label for="mSol">质量 m</label>
+                <div class="sol-input">
+                  <input id="mSol" type="number" min="0" step="any" placeholder="例如：2.5" />
+                  <select id="mSolUnit" aria-label="质量单位">
+                    <option value="g" selected>g</option>
+                    <option value="mg">mg</option>
+                    <option value="ug">μg</option>
+                    <option value="ng">ng</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="sol-op">=</div>
+
+              <div class="sol-term">
+                <label for="CSol">浓度 C</label>
+                <div class="sol-input">
+                  <input id="CSol" type="number" min="0" step="any" placeholder="例如：1" />
+                  <select id="CSolUnit" aria-label="浓度单位">
+                    <option value="M" selected>M</option>
+                    <option value="mM">mM</option>
+                    <option value="uM">μM</option>
+                    <option value="nM">nM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="sol-op">×</div>
+
+              <div class="sol-term">
+                <label for="VSol">体积 V</label>
+                <div class="sol-input">
+                  <input id="VSol" type="number" min="0" step="any" placeholder="例如：100" />
+                  <select id="VSolUnit" aria-label="体积单位">
+                    <option value="L">L</option>
+                    <option value="mL" selected>mL</option>
+                    <option value="uL">μL</option>
+                    <option value="nL">nL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="sol-op">×</div>
+
+              <div class="sol-term">
+                <label for="MWSol">分子量 MW</label>
+                <div class="sol-input">
+                  <input id="MWSol" type="number" min="0" step="any" placeholder="例如：58.44" />
+                  <span class="sol-unit">g/mol</span>
+                </div>
+                
+              </div>
+            </div>
+            <div id="statusSol" class="status"></div>
+          </div>
+
+          <!-- ABOUT PANEL -->
+          <div class="panel" data-panel="about" style="display:none">
+            <div class="hint" style="margin-top:0">
+              <div class="badge">模式说明</div>
+              <ul>
+                <li><b>基础换算</b>：通过化学式计算摩尔质量（M），并进行 m↔n 互算。</li>
+                <li><b>溶液浓度</b>：不解析化学式，按四个量 <span class="mono">m, C, V, MW</span> 互算（生物实验更常用）。</li>
+              </ul>
+              <div class="badge">离线与隐私</div>
+              <ul>
+                <li>纯前端，无网络请求；历史记录仅保存在浏览器 localStorage。</li>
+              </ul>
+              <div class="badge">快捷键</div>
+              <ul>
+                <li><span class="mono">Ctrl/⌘ + Enter</span>：计算</li>
+                <li><span class="mono">Esc</span>：重置当前模式</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OUTPUT -->
+      <section class="card" id="cardOutput">
+        <div class="hd">
+          <div>
+            <h2>结果</h2>
+            <div class="sub">主结果 + 关键中间量；基础换算可展开元素贡献表。</div>
+          </div>
+          <div class="split">
+            <button id="btnCopy">复制主结果</button>
+            <button id="btnClearHist">清空历史</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="kpi">
+            <div class="box">
+              <div class="t">主结果</div>
+              <div class="v" id="mainResult">—</div>
+              <div class="u" id="mainUnit" class="muted">—</div>
+            </div>
+            <div class="box">
+              <div class="t" id="rightKpiTitle">摩尔质量 M</div>
+              <div class="v" id="Mval">—</div>
+              <div class="u" id="rightKpiUnit" class="muted">g/mol</div>
+            </div>
+          </div>
+
+          <details id="detailSteps">
+            <summary>展开：计算过程与元素贡献（仅基础换算）</summary>
+            <div class="inner">
+              <div class="hint mono" id="stepText">—</div>
+              <div style="height:10px"></div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>元素</th>
+                    <th>计数</th>
+                    <th>原子量</th>
+                    <th>贡献 (g/mol)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody">
+                  <tr><td colspan="4" class="muted">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <div style="height:12px"></div>
+
+          <div class="split" style="margin-bottom:10px">
+            <div class="badge">历史记录（最近 10 条）</div>
+            <span class="muted">点击“回填”可快速复用</span>
+          </div>
+          <div class="history" id="history"></div>
+
+          <div class="footer">
+            <div>版本 <span class="mono">1.2</span> · 本地时间：<span id="now" class="mono">—</span></div>
+            <div>提示：溶液模式计算使用 m = C·V·MW。</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   Atomic weights (approx.)
+   ========================= */
+const AW = {
+  H:1.008, He:4.0026, Li:6.94, Be:9.0122, B:10.81, C:12.011, N:14.007, O:15.999, F:18.998, Ne:20.180,
+  Na:22.990, Mg:24.305, Al:26.982, Si:28.085, P:30.974, S:32.06, Cl:35.45, Ar:39.948, K:39.098, Ca:40.078,
+  Sc:44.956, Ti:47.867, V:50.942, Cr:51.996, Mn:54.938, Fe:55.845, Co:58.933, Ni:58.693, Cu:63.546, Zn:65.38,
+  Ga:69.723, Ge:72.630, As:74.922, Se:78.971, Br:79.904, Kr:83.798, Rb:85.468, Sr:87.62, Y:88.906, Zr:91.224,
+  Nb:92.906, Mo:95.95, Tc:98, Ru:101.07, Rh:102.91, Pd:106.42, Ag:107.87, Cd:112.41, In:114.82, Sn:118.71,
+  Sb:121.76, Te:127.60, I:126.90, Xe:131.29, Cs:132.91, Ba:137.33, La:138.91, Ce:140.12, Pr:140.91, Nd:144.24,
+  Pm:145, Sm:150.36, Eu:151.96, Gd:157.25, Tb:158.93, Dy:162.50, Ho:164.93, Er:167.26, Tm:168.93, Yb:173.05,
+  Lu:174.97, Hf:178.49, Ta:180.95, W:183.84, Re:186.21, Os:190.23, Ir:192.22, Pt:195.08, Au:196.97, Hg:200.59,
+  Tl:204.38, Pb:207.2, Bi:208.98, Po:209, At:210, Rn:222, Fr:223, Ra:226, Ac:227, Th:232.04,
+  Pa:231.04, U:238.03, Np:237, Pu:244, Am:243, Cm:247, Bk:247, Cf:251, Es:252, Fm:257,
+  Md:258, No:259, Lr:266, Rf:267, Db:268, Sg:269, Bh:270, Hs:277, Mt:278, Ds:281,
+  Rg:282, Cn:285, Nh:286, Fl:289, Mc:290, Lv:293, Ts:294, Og:294
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function nowStr(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmtNum(x){
+  if (!isFinite(x)) return "—";
+  const mode = $("#fmt").value;
+  const n = parseInt($("#fmtN").value, 10);
+  if (mode === "fix") return x.toFixed(n);
+  if (x === 0) return "0";
+  return x.toPrecision(n);
+}
+
+/* Unit conversions */
+function unitToG(val, unit){
+  if (val === "" || val === null || val === undefined) return null;
+  const x = Number(val);
+  if (!isFinite(x)) return null;
+  if (unit === "g") return x;
+  if (unit === "mg") return x/1e3;
+  if (unit === "ug") return x/1e6;
+  if (unit === "ng") return x/1e9;
+  if (unit === "kg") return x*1e3;
+  return null;
+}
+function unitFromG(g, unit){
+  if (!isFinite(g)) return NaN;
+  if (unit === "g") return g;
+  if (unit === "mg") return g*1e3;
+  if (unit === "ug") return g*1e6;
+  if (unit === "ng") return g*1e9;
+  if (unit === "kg") return g/1e3;
+  return NaN;
+}
+function unitToL(val, unit){
+  if (val === "" || val === null || val === undefined) return null;
+  const x = Number(val);
+  if (!isFinite(x)) return null;
+  if (unit === "L") return x;
+  if (unit === "mL") return x/1e3;
+  if (unit === "uL") return x/1e6;
+  if (unit === "nL") return x/1e9;
+  return null;
+}
+function unitFromL(L, unit){
+  if (!isFinite(L)) return NaN;
+  if (unit === "L") return L;
+  if (unit === "mL") return L*1e3;
+  if (unit === "uL") return L*1e6;
+  if (unit === "nL") return L*1e9;
+  return NaN;
+}
+function unitToM(val, unit){
+  if (val === "" || val === null || val === undefined) return null;
+  const x = Number(val);
+  if (!isFinite(x)) return null;
+  if (unit === "M") return x;
+  if (unit === "mM") return x*1e-3;
+  if (unit === "uM") return x*1e-6;
+  if (unit === "nM") return x*1e-9;
+  return null;
+}
+function unitFromM(M, unit){
+  if (!isFinite(M)) return NaN;
+  if (unit === "M") return M;
+  if (unit === "mM") return M*1e3;
+  if (unit === "uM") return M*1e6;
+  if (unit === "nM") return M*1e9;
+  return NaN;
+}
+
+function showStatus(id, msg, type){
+  const el = $(id);
+  el.textContent = msg;
+  el.classList.add("show");
+  el.classList.remove("err","ok");
+  if (type) el.classList.add(type);
+}
+function clearStatus(id){
+  const el = $(id);
+  el.textContent = "";
+  el.classList.remove("show","err","ok");
+}
+
+/* ===== Formula parser (basic mode only) ===== */
+function sanitizeFormula(raw){
+  let s = (raw || "").trim();
+  if (!s) return s;
+
+  const mode = $("#dotMode")?.value || "auto";
+  if (mode === "auto") s = s.replace(/·/g, ".");
+  else if (mode === "dot") s = s.replace(/·/g, ".");
+
+  const ignore = $("#ignoreCharge")?.value || "on";
+  if (ignore === "on"){
+    s = s.replace(/\s+/g, "");
+    s = s.replace(/\^[0-9]*[+\-]/g, "");
+    s = s.replace(/([0-9]*[+\-])+$/g, "");
+  }
+  return s;
+}
+
+function parseSegment(seg){
+  let i = 0;
+  function parseNumber(){
+    let start = i;
+    while (i < seg.length && /[0-9]/.test(seg[i])) i++;
+    if (start === i) return 1;
+    return parseInt(seg.slice(start,i), 10);
+  }
+  function parseElement(){
+    if (i >= seg.length) return null;
+    if (!/[A-Z]/.test(seg[i])) return null;
+    let sym = seg[i]; i++;
+    if (i < seg.length && /[a-z]/.test(seg[i])){ sym += seg[i]; i++; }
+    if (!(sym in AW)) throw new Error(`未知元素符号：${sym}`);
+    const n = parseNumber();
+    return {[sym]: n};
+  }
+  function merge(a,b,mul=1){
+    for (const k in b) a[k] = (a[k] || 0) + b[k]*mul;
+    return a;
+  }
+  function parseGroup(){
+    let out = {};
+    while (i < seg.length){
+      const ch = seg[i];
+      if (ch === ')') break;
+      if (ch === '('){
+        i++;
+        const inner = parseGroup();
+        if (i >= seg.length || seg[i] !== ')') throw new Error("括号不匹配：缺少 ')'");
+        i++;
+        const mul = parseNumber();
+        merge(out, inner, mul);
+      } else {
+        const el = parseElement();
+        if (!el) throw new Error(`无法解析字符：'${seg[i]}'（位置 ${i+1}）`);
+        merge(out, el, 1);
+      }
+    }
+    return out;
+  }
+  const res = parseGroup();
+  if (i < seg.length){
+    if (seg[i] === ')') throw new Error("括号不匹配：多余 ')'");
+    throw new Error(`无法解析尾部：'${seg.slice(i)}'`);
+  }
+  return res;
+}
+
+function parseFormula(raw){
+  const s = sanitizeFormula(raw);
+  if (!s) throw new Error("请输入化学式。");
+  const parts = s.split(".");
+  let total = {};
+  const merge = (a,b,m=1) => { for (const k in b) a[k]=(a[k]||0)+b[k]*m; return a; };
+  for (let p of parts){
+    if (!p) continue;
+    let coef = 1;
+    const m = p.match(/^(\d+)(.*)$/);
+    if (m){ coef = parseInt(m[1],10); p = m[2]; if (!p) throw new Error("点号后系数后缺少化学式，例如：·5H2O"); }
+    merge(total, parseSegment(p), coef);
+  }
+  return {normalized: s, counts: total};
+}
+
+function molarMass(counts){
+  let M = 0;
+  const rows = [];
+  for (const [el, n] of Object.entries(counts)){
+    const aw = AW[el];
+    const contrib = aw * n;
+    M += contrib;
+    rows.push({el, n, aw, contrib});
+  }
+  rows.sort((a,b)=>a.el.localeCompare(b.el));
+  return {M, rows};
+}
+
+/* ===== History ===== */
+const HIST_KEY = "mole_calc_hist_v12";
+function loadHist(){
+  try{
+    const arr = JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
+    if (Array.isArray(arr)) return arr;
+  }catch(e){}
+  return [];
+}
+function saveHist(arr){ localStorage.setItem(HIST_KEY, JSON.stringify(arr.slice(0,10))); }
+function addHist(item){
+  const arr = loadHist();
+  arr.unshift({...item, t: Date.now()});
+  const seen = new Set();
+  const out = [];
+  for (const x of arr){
+    const key = JSON.stringify({mode:x.mode, data:x.data});
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(x);
+  }
+  saveHist(out);
+  renderHist();
+}
+function clearHist(){ localStorage.removeItem(HIST_KEY); renderHist(); }
+function renderHist(){
+  const box = $("#history");
+  const arr = loadHist();
+  if (!arr.length){ box.innerHTML = `<div class="muted">暂无历史记录。</div>`; return; }
+  box.innerHTML = "";
+  for (const it of arr){
+    const d = new Date(it.t);
+    const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const div = document.createElement("div");
+    div.className = "hist-item";
+    const title = it.mode === "basic" ? "基础" : "溶液";
+    div.innerHTML = `
+      <div class="left">
+        <div class="a">${title} · <span class="mono">${it.summary}</span></div>
+        <div class="b">${stamp}</div>
+      </div>
+      <div class="right">
+        <button class="btnFill">回填</button>
+      </div>
+    `;
+    div.querySelector(".btnFill").addEventListener("click", ()=>{
+      if (it.mode === "basic"){
+        setTab("basic");
+        $("#formula").value = it.data.formula || "";
+        $("#known").value = it.data.known || "m";
+        $("#mass").value = it.data.mass ?? "";
+        $("#massUnit").value = it.data.massUnit || "g";
+        $("#moles").value = it.data.moles ?? "";
+        syncBasicKnownUI();
+        compute();
+      }else{
+        setTab("solution");
+        $("#mSol").value = it.data.mSol ?? "";
+        $("#mSolUnit").value = it.data.mSolUnit || "g";
+        $("#CSol").value = it.data.CSol ?? "";
+        $("#CSolUnit").value = it.data.CSolUnit || "M";
+        $("#VSol").value = it.data.VSol ?? "";
+        $("#VSolUnit").value = it.data.VSolUnit || "mL";
+        $("#MWSol").value = it.data.MWSol ?? "";
+        compute();
+      }
+    });
+    box.appendChild(div);
+  }
+}
+
+/* ===== Tabs ===== */
+let currentTab = "basic";
+function setTab(name){
+  currentTab = name;
+  $$(".tab").forEach(t=>{
+    const sel = t.dataset.tab === name;
+    t.setAttribute("aria-selected", sel ? "true" : "false");
+    t.tabIndex = sel ? 0 : -1;
+  });
+  $$(".panel").forEach(p=>{ p.style.display = (p.dataset.panel === name) ? "block" : "none"; });
+
+  if (name === "basic"){
+    $("#inputTitle").textContent = "输入（基础换算）";
+    $("#inputSub").textContent = "输入化学式 + 已知量（质量或物质的量）。实时输出 M、m、n。";
+    $("#rightKpiTitle").textContent = "摩尔质量 M";
+    $("#rightKpiUnit").textContent = "g/mol";
+    $("#detailSteps").style.display = "block";
+  } else if (name === "solution"){
+    $("#inputTitle").textContent = "输入（溶液浓度）";
+    $("#inputSub").textContent = "使用 m、C、V、MW 四个量互算。选择求解目标，填写其余 3 个。";
+    $("#rightKpiTitle").textContent = "分子量 MW";
+    $("#rightKpiUnit").textContent = "g/mol";
+    $("#detailSteps").style.display = "none";
+  } else {
+    $("#inputTitle").textContent = "说明";
+    $("#inputSub").textContent = "数据与使用提示。";
+    $("#rightKpiTitle").textContent = "—";
+    $("#rightKpiUnit").textContent = "";
+    $("#detailSteps").style.display = "none";
+  }
+  compute();
+}
+$$(".tab").forEach(t=>{
+  t.addEventListener("click", ()=> setTab(t.dataset.tab));
+  t.addEventListener("keydown", (e)=>{ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTab(t.dataset.tab); } });
+});
+
+/* ===== UI sync ===== */
+function syncBasicKnownUI(){
+  const known = $("#known").value;
+  if (known === "m"){
+    $("#basicRowN").style.display = "none";
+    $("#basicRowM").querySelector(".field").style.display = "flex";
+  } else {
+    $("#basicRowN").style.display = "flex";
+    $("#basicRowM").querySelector(".field").style.display = "none";
+  }
+}
+$("#known").addEventListener("change", ()=>{ syncBasicKnownUI(); compute(); });
+
+
+/* ===== Compute ===== */
+function compute(){
+  $("#now").textContent = nowStr();
+  clearStatus("#statusBasic");
+  clearStatus("#statusSol");
+
+  $("#mainResult").textContent = "—";
+  $("#mainUnit").textContent = "—";
+  $("#Mval").textContent = "—";
+  $("#stepText").textContent = "—";
+  $("#tbody").innerHTML = `<tr><td colspan="4" class="muted">—</td></tr>`;
+
+  if (currentTab === "basic") computeBasic();
+  else if (currentTab === "solution") computeSolution();
+}
+
+function computeBasic(){
+  try{
+    const parsed = parseFormula($("#formula").value);
+    const {M, rows} = molarMass(parsed.counts);
+
+    $("#Mval").textContent = fmtNum(M);
+
+    const known = $("#known").value;
+    let m_g, n_mol;
+    if (known === "m"){
+      m_g = unitToG($("#mass").value, $("#massUnit").value);
+      if (m_g === null) throw new Error("请输入质量 m。");
+      if (m_g <= 0) throw new Error("质量 m 必须大于 0。");
+      n_mol = m_g / M;
+      $("#mainResult").textContent = `n = ${fmtNum(n_mol)} mol`;
+      $("#mainUnit").textContent = `由 n = m/M；m = ${fmtNum(unitFromG(m_g, $("#massUnit").value))} ${$("#massUnit").selectedOptions[0].textContent}`;
+    } else {
+      n_mol = Number($("#moles").value);
+      if (!isFinite(n_mol)) throw new Error("请输入物质的量 n。");
+      if (n_mol <= 0) throw new Error("物质的量 n 必须大于 0。");
+      m_g = n_mol * M;
+      $("#mainResult").textContent = `m = ${fmtNum(unitFromG(m_g, $("#massUnit").value))} ${$("#massUnit").selectedOptions[0].textContent}`;
+      $("#mainUnit").textContent = `由 m = n·M；n = ${fmtNum(n_mol)} mol`;
+    }
+
+    const formulaShow = parsed.normalized.replace(/\./g,"·");
+    const pieces = rows.map(r => `${r.el}:${r.n}×${r.aw}=${fmtNum(r.contrib)}`).join(" + ");
+    $("#stepText").textContent =
+      `化学式：${formulaShow}\n元素计数：` +
+      Object.entries(parsed.counts).map(([k,v])=>`${k}${v===1?"":v}`).join(" ") +
+      `\nM = ${pieces} = ${fmtNum(M)} g/mol`;
+
+    $("#tbody").innerHTML = rows.map(r=>`
+      <tr>
+        <td class="mono">${r.el}</td>
+        <td class="mono">${r.n}</td>
+        <td class="mono">${fmtNum(r.aw)}</td>
+        <td class="mono">${fmtNum(r.contrib)}</td>
+      </tr>
+    `).join("");
+
+    showStatus("#statusBasic", "计算成功。", "ok");
+
+    const summary = known === "m"
+      ? `${formulaShow} | m=${$("#mass").value}${$("#massUnit").selectedOptions[0].textContent} → n=${fmtNum(n_mol)}mol`
+      : `${formulaShow} | n=${$("#moles").value}mol → m=${fmtNum(unitFromG(m_g,$("#massUnit").value))}${$("#massUnit").selectedOptions[0].textContent}`;
+
+    addHist({ mode:"basic", summary, data:{
+      formula: $("#formula").value, known,
+      mass: $("#mass").value, massUnit: $("#massUnit").value,
+      moles: $("#moles").value
+    }});
+
+  }catch(err){
+    showStatus("#statusBasic", String(err.message || err), "err");
+  }
+}
+
+function computeSolution(){
+  try{
+    const m_g = unitToG($("#mSol").value, $("#mSolUnit").value);
+    const C_M = unitToM($("#CSol").value, $("#CSolUnit").value);
+    const V_L = unitToL($("#VSol").value, $("#VSolUnit").value);
+    const MW_in = Number($("#MWSol").value);
+
+    const hasM  = (m_g !== null && isFinite(m_g) && m_g > 0);
+    const hasC  = (C_M !== null && isFinite(C_M) && C_M > 0);
+    const hasV  = (V_L !== null && isFinite(V_L) && V_L > 0);
+    const hasMW = (isFinite(MW_in) && MW_in > 0);
+
+    const missing = [];
+    if (!hasM)  missing.push("m");
+    if (!hasC)  missing.push("C");
+    if (!hasV)  missing.push("V");
+    if (!hasMW) missing.push("MW");
+
+    if (missing.length !== 1){
+      throw new Error("请在 m、C、V、MW 中只留空 1 个（其余 3 个需为正数），系统会自动求解留空项。");
+    }
+
+    function smartScale(base, kind){
+      // base: g / L / M
+      const tables = {
+        mass: [
+          {u:"kg", f:1/1e3},
+          {u:"g",  f:1},
+          {u:"mg", f:1e3},
+          {u:"ug", f:1e6},
+          {u:"ng", f:1e9},
+        ],
+        vol: [
+          {u:"L",  f:1},
+          {u:"mL", f:1e3},
+          {u:"uL", f:1e6},
+          {u:"nL", f:1e9},
+        ],
+        conc: [
+          {u:"M",  f:1},
+          {u:"mM", f:1e3},
+          {u:"uM", f:1e6},
+          {u:"nM", f:1e9},
+        ]
+      };
+      const arr = tables[kind];
+      if (!arr) return {val: base, unit:""};
+      // Choose unit so displayed is in (0,1000) if possible, prefer >=1 when possible.
+      let candidates = arr.map(x => ({...x, v: base * x.f})).filter(x => isFinite(x.v) && x.v > 0 && x.v < 1000);
+      let pick = null;
+
+      // Prefer 1..1000
+      let pref = candidates.filter(x => x.v >= 1);
+      if (pref.length) {
+        // choose closest to 10^2? actually choose the one with v closest to 100 (stable)
+        pick = pref.reduce((a,b)=> (Math.abs(a.v-100) < Math.abs(b.v-100) ? a : b));
+      } else if (candidates.length){
+        // all are <1 but <1000, choose the largest value (closest to 1)
+        pick = candidates.reduce((a,b)=> (a.v > b.v ? a : b));
+      } else {
+        // if all >=1000 choose largest unit (smallest v), else if all <0. ??? default to smallest unit giving max v
+        const all = arr.map(x => ({...x, v: base * x.f})).filter(x => isFinite(x.v) && x.v > 0);
+        if (!all.length) return {val: base, unit: arr[0].u};
+        // if base is huge => pick smallest v (largest unit)
+        const ge = all.filter(x => x.v >= 1000);
+        if (ge.length){
+          pick = ge.reduce((a,b)=> (a.v < b.v ? a : b)); // smallest v among >=1000
+        } else {
+          // base very small => pick largest v (smallest unit)
+          pick = all.reduce((a,b)=> (a.v > b.v ? a : b));
+        }
+      }
+      return {val: pick.v, unit: pick.u};
+    }
+
+    let computedKey = missing[0];
+    let MW = hasMW ? MW_in : null;
+
+    if (computedKey === "m"){
+      const m_out = C_M * V_L * MW_in; // g
+      const scaled = smartScale(m_out, "mass");
+      $("#mSolUnit").value = scaled.unit;
+      $("#mSol").value = scaled.val;
+      $("#mainResult").textContent = `m = ${fmtNum(scaled.val)} ${$("#mSolUnit").selectedOptions[0].textContent}`;
+      $("#mainUnit").textContent = `由 m = C·V·MW；C=${fmtNum(C_M)} M，V=${fmtNum(V_L)} L，MW=${fmtNum(MW_in)} g/mol`;
+      MW = MW_in;
+    } else if (computedKey === "C"){
+      const C_out = m_g / (V_L * MW_in); // M
+      const scaled = smartScale(C_out, "conc");
+      $("#CSolUnit").value = scaled.unit;
+      $("#CSol").value = scaled.val;
+      $("#mainResult").textContent = `C = ${fmtNum(scaled.val)} ${$("#CSolUnit").selectedOptions[0].textContent}`;
+      $("#mainUnit").textContent = `由 C = m/(V·MW)；m=${fmtNum(m_g)} g，V=${fmtNum(V_L)} L，MW=${fmtNum(MW_in)} g/mol`;
+      MW = MW_in;
+    } else if (computedKey === "V"){
+      const V_out = m_g / (C_M * MW_in); // L
+      const scaled = smartScale(V_out, "vol");
+      $("#VSolUnit").value = scaled.unit;
+      $("#VSol").value = scaled.val;
+      $("#mainResult").textContent = `V = ${fmtNum(scaled.val)} ${$("#VSolUnit").selectedOptions[0].textContent}`;
+      $("#mainUnit").textContent = `由 V = m/(C·MW)；m=${fmtNum(m_g)} g，C=${fmtNum(C_M)} M，MW=${fmtNum(MW_in)} g/mol`;
+      MW = MW_in;
+    } else if (computedKey === "MW"){
+      const MW_out = m_g / (C_M * V_L); // g/mol
+      $("#MWSol").value = MW_out;
+      $("#mainResult").textContent = `MW = ${fmtNum(MW_out)} g/mol`;
+      $("#mainUnit").textContent = `由 MW = m/(C·V)；m=${fmtNum(m_g)} g，C=${fmtNum(C_M)} M，V=${fmtNum(V_L)} L`;
+      MW = MW_out;
+    }
+
+    // Right KPI shows MW
+    if (MW && isFinite(MW)) $("#Mval").textContent = fmtNum(MW);
+
+    showStatus("#statusSol", `已自动求解：${computedKey}`, "ok");
+
+    const summary =
+      `${computedKey} 自动求解 | ` +
+      `m=${$("#mSol").value||"—"}${$("#mSolUnit").selectedOptions[0].textContent}, ` +
+      `C=${$("#CSol").value||"—"}${$("#CSolUnit").selectedOptions[0].textContent}, ` +
+      `V=${$("#VSol").value||"—"}${$("#VSolUnit").selectedOptions[0].textContent}, ` +
+      `MW=${$("#MWSol").value||"—"}g/mol`;
+
+    addHist({ mode:"solution", summary, data:{
+      mSol: $("#mSol").value, mSolUnit: $("#mSolUnit").value,
+      CSol: $("#CSol").value, CSolUnit: $("#CSolUnit").value,
+      VSol: $("#VSol").value, VSolUnit: $("#VSolUnit").value,
+      MWSol: $("#MWSol").value
+    }});
+
+  }catch(err){
+    showStatus("#statusSol", String(err.message || err), "err");
+  }
+}
+
+/* ===== Buttons & shortcuts ===== */
+$("#btnCalc").addEventListener("click", compute);
+
+$("#btnReset").addEventListener("click", ()=>{
+  if (currentTab === "basic"){
+    $("#formula").value = "";
+    $("#mass").value = "";
+    $("#moles").value = "";
+    $("#known").value = "m";
+    $("#massUnit").value = "g";
+    syncBasicKnownUI();
+    clearStatus("#statusBasic");
+  } else if (currentTab === "solution"){
+    $("#mSol").value = "";
+    $("#mSolUnit").value = "g";
+    $("#CSol").value = "";
+    $("#CSolUnit").value = "M";
+    $("#VSol").value = "";
+    $("#VSolUnit").value = "mL";
+    $("#MWSol").value = "";
+      clearStatus("#statusSol");
+  }
+  compute();
+});
+
+$("#btnCopy").addEventListener("click", async ()=>{
+  const text = `${$("#mainResult").textContent}\n${$("#mainUnit").textContent}`;
+  try{ await navigator.clipboard.writeText(text); alert("已复制到剪贴板。"); }
+  catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+    alert("已复制到剪贴板（兼容模式）。");
+  }
+});
+
+$("#btnClearHist").addEventListener("click", ()=>{
+  if (confirm("确定清空历史记录？（仅清除本机浏览器存储）")) clearHist();
+});
+
+$("#fmt").addEventListener("change", compute);
+$("#fmtN").addEventListener("change", compute);
+
+
+/* Live update policy:
+   - Basic mode: compute on input/change (safe, fewer fields)
+   - Solution mode: DO NOT compute on input; user can clear/edit freely, then click "计算" (or Ctrl/⌘+Enter)
+*/
+function clearSolutionPreview(){
+  // only affects solution tab UI; keeps user inputs intact
+  clearStatus("#statusSol");
+  // don't wipe Mval if user is typing MW; keep result area clearly "stale"
+  if (currentTab === "solution"){
+    $("#mainResult").textContent = "—";
+    $("#mainUnit").textContent = "—";
+  }
+}
+
+/* Basic mode: live compute */
+["#formula","#mass","#moles","#massUnit","#ignoreCharge","#dotMode"].forEach(id=>{
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener("input", compute);
+  el.addEventListener("change", compute);
+});
+
+/* Solution mode: clear preview only (no auto compute) */
+["#mSol","#mSolUnit","#CSol","#CSolUnit","#VSol","#VSolUnit","#MWSol"].forEach(id=>{
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener("input", clearSolutionPreview);
+  el.addEventListener("change", clearSolutionPreview);
+});
+document.addEventListener("keydown", (e)=>{
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); compute(); }
+  if (e.key === "Escape"){ e.preventDefault(); $("#btnReset").click(); }
+});
+
+
+/* init */
+function init(){
+  // tabs
+  $$(".tab").forEach(t=>t.addEventListener("click", ()=> setTab(t.dataset.tab)));
+  $("#known").addEventListener("change", syncBasicKnownUI);
+  syncBasicKnownUI();
+  renderHist();
+  compute();
+}
+init();
+</script>
+</body>
+</html>
