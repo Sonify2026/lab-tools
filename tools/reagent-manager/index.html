@@ -1,0 +1,2225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>实验室药品管理（个人版）</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111826; --panel2:#0f1520;
+      --text:#e6edf3; --muted:#9fb0c0; --line:#223043;
+      --accent:#6ee7b7; --warn:#fbbf24; --danger:#fb7185; --ok:#60a5fa;
+      --chip:#172235; --chip2:#0f1a2b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:var(--sans); background:linear-gradient(180deg,#070a0f 0%, #0b0f14 100%); color:var(--text);}
+    a{color:inherit}
+    button,input,select,textarea{font:inherit}
+    .app{display:grid; grid-template-columns: 260px 1fr; min-height:100vh;}
+    .sidebar{background:rgba(17,24,38,.65); border-right:1px solid var(--line); padding:18px; position:sticky; top:0; height:100vh; backdrop-filter: blur(10px);}
+    .brand{display:flex; gap:10px; align-items:center; margin-bottom:14px;}
+    .logo{width:36px;height:36px;border-radius:12px;background:radial-gradient(circle at 30% 30%, var(--accent), #3b82f6 55%, #111826 100%); box-shadow:var(--shadow);}
+    .brand h1{font-size:14px; margin:0; letter-spacing:.2px;}
+    .brand .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+    .nav{display:flex; flex-direction:column; gap:8px; margin-top:14px;}
+    .nav button{
+      width:100%; text-align:left; padding:10px 12px; border:1px solid transparent; border-radius:12px;
+      background:transparent; color:var(--text); cursor:pointer;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .nav button:hover{background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.06)}
+    .nav button.active{background:rgba(110,231,183,.10); border-color:rgba(110,231,183,.25)}
+    .pill{font-size:12px; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,.06); color:var(--muted);}
+    .sidecard{margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:14px; background:rgba(15,21,32,.55);}
+    .sidecard .k{font-size:12px; color:var(--muted)}
+    .sidecard .v{font-size:18px; margin-top:4px}
+    .content{padding:18px 18px 40px;}
+    .topbar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 14px; border:1px solid var(--line); border-radius:16px;
+      background:rgba(17,24,38,.5); backdrop-filter: blur(10px); box-shadow:var(--shadow);
+      position:sticky; top:12px; z-index:10;
+    }
+    .search{flex:1; display:flex; gap:10px; align-items:center}
+    .search input{
+      width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(7,10,15,.55); color:var(--text); outline:none;
+    }
+    .search input:focus{border-color:rgba(110,231,183,.35)}
+    .actions{display:flex; gap:8px; align-items:center}
+    .btn{
+      padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05); color:var(--text); cursor:pointer;
+    }
+    .btn:hover{border-color:rgba(255,255,255,.18)}
+    .btn.primary{background:rgba(110,231,183,.12); border-color:rgba(110,231,183,.25)}
+    .btn.danger{background:rgba(251,113,133,.12); border-color:rgba(251,113,133,.25)}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+    .grid{display:grid; gap:12px;}
+    .cards{grid-template-columns: repeat(4, minmax(0,1fr)); margin-top:14px;}
+    @media (max-width:1100px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr));} .app{grid-template-columns: 220px 1fr;} }
+    @media (max-width:820px){ .app{grid-template-columns:1fr;} .sidebar{position:relative; height:auto;} .topbar{position:relative; top:0;} .cards{grid-template-columns:1fr;} }
+    .card{
+      border:1px solid var(--line); border-radius:var(--radius); padding:14px; background:rgba(17,24,38,.45); box-shadow:var(--shadow);
+    }
+    .card h3{margin:0; font-size:14px}
+    .card .big{font-size:28px; margin-top:6px}
+    .muted{color:var(--muted)}
+    .section{margin-top:14px;}
+    .section h2{font-size:16px; margin:0 0 10px 0; letter-spacing:.2px;}
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      padding:12px; border:1px solid var(--line); border-radius:16px; background:rgba(15,21,32,.45);
+    }
+    .toolbar .group{display:flex; gap:8px; align-items:center;}
+    select, .smallinput{
+      padding:9px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(7,10,15,.55); color:var(--text); outline:none;
+    }
+    .smallinput{min-width:220px}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.10);
+      background:rgba(23,34,53,.55); cursor:pointer; user-select:none;
+      font-size:12px; color:var(--text);
+    }
+    .chip:hover{border-color:rgba(255,255,255,.18)}
+    .chip.on{border-color:rgba(110,231,183,.35); background:rgba(110,231,183,.10)}
+    .chip .dot{width:8px;height:8px;border-radius:8px; background:rgba(255,255,255,.35)}
+    .chip.system{background:rgba(15,26,43,.6)}
+    .chip.neg{border-style:dashed; opacity:.9}
+    .tablewrap{margin-top:10px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:rgba(17,24,38,.35)}
+    table{width:100%; border-collapse:collapse;}
+    thead th{
+      text-align:left; font-size:12px; color:var(--muted); padding:10px 12px;
+      background:rgba(15,21,32,.65); border-bottom:1px solid var(--line);
+      position:sticky; top:0;
+    }
+    tbody td{padding:12px; border-bottom:1px solid rgba(34,48,67,.6); vertical-align:top;}
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    .negqty{background:rgba(251,113,133,.08);} 
+    .negqty:hover{background:rgba(251,113,133,.10);}
+    .name{font-weight:650}
+    .subline{font-size:12px; color:var(--muted); margin-top:4px}
+    .badge{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 12px 6px 14px;
+  border-radius:8px; /* rounded rectangle */
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-weight:600;
+  font-size:12px;
+  line-height:1;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+.badge::before{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  width:4px; /* left accent bar */
+  background:var(--accent, rgba(255,255,255,.22));
+  border-top-left-radius:8px;
+  border-bottom-left-radius:8px;
+}
+
+
+    .badge.warn{border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.10)}
+    .badge.danger{border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.10)}
+    .badge.ok{border-color:rgba(96,165,250,.35); background:rgba(96,165,250,.10)}
+    .mono{font-family:var(--mono)}
+    .rowactions{display:flex; gap:8px; flex-wrap:wrap;}
+    .linkbtn{background:transparent; border:1px solid rgba(255,255,255,.12); color:var(--text); padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px;}
+    .linkbtn:hover{border-color:rgba(255,255,255,.18)}
+    details > summary{cursor:pointer; color:var(--muted); font-size:12px;}
+    details{margin-top:8px}
+    .empty{padding:18px; color:var(--muted); text-align:center}
+    /* Modal */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:flex-start; justify-content:center; padding:22px; z-index:30;}
+    .modal.on{display:flex;}
+    .dialog{width:min(860px, 100%); border:1px solid var(--line); border-radius:18px; background:rgba(17,24,38,.92); box-shadow:var(--shadow); overflow:hidden; max-height: calc(100vh - 44px); display:flex; flex-direction:column;}
+    .dialog .head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid rgba(34,48,67,.9);}
+    .dialog .head h3{margin:0; font-size:14px}
+    .dialog .body{padding:16px; overflow:auto;}
+    .formgrid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;}
+    .formgrid .full{grid-column: 1 / -1}
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input[type="text"], input[type="number"], input[type="date"], textarea{
+      width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(7,10,15,.55); color:var(--text); outline:none;
+    }
+    textarea{min-height:80px; resize:vertical}
+    .hint{font-size:12px; color:var(--muted); margin-top:6px}
+    .dialog .foot{display:flex; gap:10px; justify-content:flex-end; padding:14px 16px; border-top:1px solid rgba(34,48,67,.9); background:rgba(15,21,32,.6)}
+    .toast{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:10px; z-index:50;}
+    .toast .t{padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:rgba(17,24,38,.92); box-shadow:var(--shadow); max-width:360px;}
+    .toast .t .title{font-weight:650}
+    .kbd{
+  display:inline-block;
+  padding:2px 6px;
+  border-radius:6px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);
+  font-size:12px;
+  line-height:1.0;
+  margin-right:4px;
+}
+    .split{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    .mini{font-size:12px; color:var(--muted)}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>实验室药品管理（个人版）</h1>
+        <div class="sub">本地离线 · 数据存于浏览器</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button data-route="home" class="active">仪表盘 <span class="pill" id="pillHome"> </span></button>
+      <button data-route="inventory">库存 <span class="pill" id="pillInv"> </span></button>
+      <button data-route="log">入库/领用 <span class="pill" id="pillLog"> </span></button>
+      <button data-route="tags">标签 <span class="pill" id="pillTags"> </span></button>
+      <button data-route="settings">设置/导入导出 <span class="pill">JSON/CSV</span></button>
+    </div>
+
+    <div class="sidecard">
+      <div class="k">快过期（30天）</div>
+      <div class="v" id="sideExp">0</div>
+      <div class="k" style="margin-top:10px;">低库存</div>
+      <div class="v" id="sideLow">0</div>
+    </div>
+
+    <div class="sidecard">
+      <div class="k">快捷键</div>
+      <div class="hint" style="display:flex; flex-direction:column; gap:8px;">
+        <div><span class="kbd">Ctrl</span>+<span class="kbd">K</span> 聚焦搜索</div>
+        <div><span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">I</span> 入库</div>
+        <div><span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">U</span> 领用</div>
+        <div><span class="kbd">Esc</span> 关闭弹窗</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div class="search">
+        <input id="globalSearch" placeholder="搜索：药名 / 中文名 / 别名 / CAS / 厂家 / 编号 / 批号 /  位置..." />
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btnQuickIn">+ 入库</button>
+        <button class="btn" id="btnQuickUse">领用</button>
+        <button class="btn" id="btnExportCSV">导出库存CSV</button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <section id="view-home" class="view">
+      <div class="grid cards">
+        <div class="card">
+          <h3>总库存批次</h3>
+          <div class="big" id="kpiLots">0</div>
+          <div class="muted">可用/隔离/过期等全部</div>
+        </div>
+        <div class="card">
+          <h3>快过期（≤30天）</h3>
+          <div class="big" id="kpiExp30">0</div>
+          <div class="muted">建议优先使用或处理</div>
+        </div>
+        <div class="card">
+          <h3>已过期</h3>
+          <div class="big" id="kpiExpired">0</div>
+          <div class="muted">请及时标记报废/销毁</div>
+        </div>
+        <div class="card">
+          <h3>低库存</h3>
+          <div class="big" id="kpiLow">0</div>
+          <div class="muted">低于阈值或为0</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="split">
+          <h2>待处理</h2>
+          <div class="mini">点击条目可跳转到库存并自动筛选</div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>类型</th><th>药品/批次</th><th>位置</th><th>到期/数量</th><th>操作</th></tr></thead>
+            <tbody id="todoTable"></tbody>
+          </table>
+          <div id="todoEmpty" class="empty" style="display:none;">暂无待处理项 🎉</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="split">
+          <h2>最近记录</h2>
+          <div class="mini">最近 20 条入库/领用/调整</div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>时间</th><th>类型</th><th>药品</th><th>批次</th><th>变化</th><th>备注</th></tr></thead>
+            <tbody id="recentTable"></tbody>
+          </table>
+          <div id="recentEmpty" class="empty" style="display:none;">还没有任何记录。先点右上角 <b>+ 入库</b>。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="view-inventory" class="view" style="display:none;">
+      <div class="section">
+        <h2>库存</h2>
+        <div class="toolbar">
+          <div class="group">
+            <span class="mini">标签匹配：</span>
+            <select id="tagMode">
+              <option value="OR">包含任意（OR）</option>
+              <option value="AND">包含全部（AND）</option>
+            </select>
+          </div>
+          <div class="group">
+            <span class="mini">状态：</span>
+            <select id="statusFilter">
+              <option value="ALL">全部</option>
+              <option value="ACTIVE">可用</option>
+              <option value="QUAR">隔离</option>
+              <option value="EXPIRED">已过期</option>
+              <option value="DISPOSED">已报废/销毁</option>
+            </select>
+          </div>
+          <div class="group">
+            <span class="mini">排序：</span>
+            <select id="sortBy">
+              <option value="EXP_ASC">有效期（近→远）</option>
+              <option value="EXP_DESC">有效期（远→近）</option>
+              <option value="USED_DESC">最近使用</option>
+              <option value="QTY_ASC">数量（少→多）</option>
+              <option value="QTY_DESC">数量（多→少）</option>
+            </select>
+          </div>
+          <div class="group">
+            <span class="mini">位置：</span>
+            <input class="smallinput" id="locFilter" placeholder="如：-20℃ / Freezer2 / Shelf3" />
+          </div>
+          <div class="group">
+            <button class="btn" id="btnClearFilters">清除筛选</button>
+          </div>
+          <div class="chips full" id="tagChips"></div>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:28%;">药品</th>
+                <th style="width:16%;">批次/有效期</th>
+                <th style="width:12%;">数量</th>
+                <th style="width:16%;">位置</th>
+                <th style="width:18%;">标签/状态</th>
+                <th style="width:10%;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="invTable"></tbody>
+          </table>
+          <div id="invEmpty" class="empty" style="display:none;">没有匹配的库存。你可以 <b>+ 入库</b> 或清除筛选。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section id="view-log" class="view" style="display:none;">
+      <div class="section">
+        <div class="split">
+          <h2>入库 / 领用 / 调整</h2>
+          <div class="mini">建议把“记录”当作记账：越快越好。</div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="card">
+            <h3>快速入库</h3>
+            <div class="hint">创建或补充一个批次（Lot）。药品名支持自动补全。</div>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn primary" id="btnOpenIn">+ 入库</button>
+              <button class="btn" id="btnOpenAdj">盘点调整</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>快速领用</h3>
+            <div class="hint">选择一个批次并扣减数量。可选填写实验用途/备注。</div>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn primary" id="btnOpenUse">领用</button>
+              <button class="btn danger" id="btnOpenDisp">报废/销毁</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="split">
+          <h2>流水</h2>
+          <div class="mini">
+            <button class="btn" id="btnExportTxCSV">导出流水CSV</button>
+          </div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>时间</th><th>类型</th><th>药品</th><th>批次</th><th>变化</th><th>备注</th></tr></thead>
+            <tbody id="txTable"></tbody>
+          </table>
+          <div id="txEmpty" class="empty" style="display:none;">暂无流水。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAGS -->
+    <section id="view-tags" class="view" style="display:none;">
+      <div class="section">
+        <div class="split">
+          <h2>标签管理</h2>
+          <div class="mini">支持：新建、重命名、合并、置顶。系统标签自动生成。</div>
+        </div>
+        <div class="toolbar">
+          <div class="group" style="flex:1;">
+            <input class="smallinput" id="newTagName" placeholder="新标签名（回车创建）" style="min-width:260px;" />
+            <div style="display:flex; gap:8px; align-items:center;">
+            <input id="newTagColorHex" type="text" value="#6ee7b7" placeholder="#RRGGBB" class="smallinput" style="width:140px; max-width:180px;" />
+            <input id="newTagColor" type="color" value="#6ee7b7" title="选择颜色" style="width:44px; height:40px; padding:0; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(7,10,15,.55);" />
+          
+            <button class="btn" id="btnTagAutoColor" type="button" style="padding:10px 12px; height:40px;">随机/自动</button>
+          </div>
+            <button class="btn primary" id="btnCreateTag">创建</button>
+          </div>
+          <div class="group">
+            <button class="btn" id="btnCleanupTags">清理空标签</button>
+          </div>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>标签</th><th>颜色</th><th>关联数量</th><th>置顶</th><th>操作</th></tr></thead>
+            <tbody id="tagTable"></tbody>
+          </table>
+          <div id="tagEmpty" class="empty" style="display:none;">暂无自定义标签。可以在入库/编辑时直接输入创建。</div>
+        </div>
+
+        <div class="section">
+          <h2>系统标签（自动）</h2>
+          <div class="chips" id="systemChips"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view" style="display:none;">
+      <div class="section">
+        <h2>备份与导入</h2>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="card">
+            <h3>导出 JSON（推荐备份）</h3>
+            <div class="hint">包含药品、批次、标签与流水。</div>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn primary" id="btnExportJSON">导出 JSON</button>
+              <button class="btn" id="btnResetAll">清空所有数据</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>导入 JSON</h3>
+            <div class="hint">从备份恢复。会覆盖当前数据（导入前建议先导出）。</div>
+            <div style="margin-top:10px;">
+              <input type="file" id="importFile" accept="application/json" />
+              <div style="margin-top:10px;">
+                <button class="btn primary" id="btnImportJSON">导入</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>数据存储说明</h2>
+          <div class="card">
+            <div class="hint">
+              该工具为<strong>纯前端单文件</strong>：所有数据默认存放在当前浏览器的 <span class="kbd">localStorage</span>。
+              建议定期用“导出 JSON”备份到硬盘或同步盘。
+              <br/><br/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal" id="modal">
+  <div class="dialog">
+    <div class="head">
+      <h3 id="modalTitle"> </h3>
+      <button class="btn" id="btnCloseModal">关闭</button>
+    </div>
+    <div class="body" id="modalBody"></div>
+    <div class="foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================
+   Minimal Personal Lab Drug Manager
+   - LocalStorage persistence
+   - Inventory lots + transactions
+   - Custom tags (create/rename/merge/pin/cleanup)
+   - System tags: expiring/expired/low/opened
+   ========================= */
+
+const STORE_KEY = "lab_drug_manager_v1";
+const DAYS_EXP_SOON = 30;
+
+function uid(prefix="id"){
+  return prefix + "_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+function todayISO(){
+  const d = new Date();
+  const z = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return z.toISOString().slice(0,10);
+}
+function parseISO(s){
+  if(!s) return null;
+  const d = new Date(s+"T00:00:00");
+  return isNaN(d) ? null : d;
+}
+function daysBetween(a,b){
+  // b - a in days
+  return Math.floor((b.getTime()-a.getTime())/86400000);
+}
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+function toast(title, msg=""){
+  const t = document.createElement("div");
+  t.className = "t";
+  t.innerHTML = `<div class="title">${escapeHtml(title)}</div>${msg?`<div class="hint">${escapeHtml(msg)}</div>`:""}`;
+  document.getElementById("toast").appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(6px)"; }, 2600);
+  setTimeout(()=>{ t.remove(); }, 3200);
+}
+
+function escapeHtml(s){
+  return (s??"").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+function downloadText(filename, content, mime="text/plain"){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 800);
+}
+
+function toCSV(rows){
+  const esc = (v)=>{
+    if(v===null||v===undefined) return "";
+    const s = String(v);
+    if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+    return s;
+  };
+  const headers = Object.keys(rows[0]||{});
+  const lines = [headers.map(esc).join(",")];
+  for(const r of rows){
+    lines.push(headers.map(h=>esc(r[h])).join(","));
+  }
+  return lines.join("\n");
+}
+
+/* ============ Data Layer ============ */
+const defaultState = ()=>{
+  return {
+    meta:{version:1, createdAt: new Date().toISOString()},
+    drugs: [
+      // example
+      // {id, name, alias, unit, defaultLocation, defaultTags:[], notes}
+    ],
+    lots: [
+      // {id, drugId, lotNo, expDate, openedDate, qty, minQty, unit, location, tags:[], status:"ACTIVE"|"QUAR"|"EXPIRED"|"DISPOSED", updatedAt, lastUsedAt}
+    ],
+    tx: [
+      // {id, timeISO, type:"IN"|"USE"|"ADJ"|"DISP", lotId, qtyDelta, note}
+    ],
+    tags: [
+      // {name, color, pinned:false}
+    ],
+    ui:{
+      route:"home",
+      search:"",
+      statusFilter:"ALL",
+      sortBy:"EXP_ASC",
+      locFilter:"",
+      tagMode:"OR",
+      tagSelected:[],  // positive
+      tagExcluded:[]   // negative
+    }
+  };
+};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultState();
+    const st = JSON.parse(raw);
+    // basic migrations
+    if(!st.ui) st.ui = defaultState().ui;
+    if(!st.tags) st.tags = [];
+    if(!st.drugs) st.drugs = [];
+    if(!st.lots) st.lots = [];
+    if(!st.tx) st.tx = [];
+    return st;
+  }catch(e){
+    console.error(e);
+    return defaultState();
+  }
+}
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+let state = load();
+
+/* ============ Computed ============ */
+const SYSTEM_TAGS = [
+  {key:"EXP_SOON", name:"快过期", desc:"距离到期≤30天", color:"#f7b4c5"},
+  {key:"EXPIRED",  name:"已过期", desc:"已过期", color:"#f38ba8"},
+  {key:"LOW_STOCK",name:"低库存", desc:"数量≤阈值", color:"#f2c98f"},
+  {key:"OPENED",   name:"已开封", desc:"已记录开封日期", color:"#b6d7f7"},
+];
+
+function getDrug(drugId){
+  return state.drugs.find(d=>d.id===drugId) || null;
+}
+function getLot(lotId){
+  return state.lots.find(l=>l.id===lotId) || null;
+}
+
+function systemTagsForLot(lot){
+  const tags = [];
+  const now = new Date();
+  const exp = parseISO(lot.expDate);
+  if(exp){
+    const d = daysBetween(now, exp);
+    if(d < 0) tags.push("已过期");
+    else if(d <= DAYS_EXP_SOON) tags.push("快过期");
+  }
+  const qty = Number(lot.qty||0);
+  const minQty = Number(lot.minQty||0);
+  if(qty <= 0 || (minQty>0 && qty <= minQty)) tags.push("低库存");
+  if(lot.openedDate) tags.push("已开封");
+  return tags;
+}
+
+function normalizeTagName(s){
+  return (s||"").trim();
+}
+
+function normalizeHexColor(c){
+  c = (c||"").trim();
+  if(!c) return "";
+  if(!c.startsWith("#")) c = "#"+c;
+  const m = /^#([0-9a-fA-F]{6})$/.exec(c);
+  return m ? ("#"+m[1].toLowerCase()) : "";
+}
+
+const TAG_PALETTE = [
+  "#a7f3d0", "#bfdbfe", "#c4b5fd", "#fbcfe8", "#fde68a",
+  "#fdba74", "#d9f99d", "#bde0fe", "#e9d5ff", "#fecdd3",
+  "#c7f9cc", "#b5e2fa"
+];
+
+function nextPaletteColor(){
+  const used = new Set((state.tags||[]).map(t=>(t.color||"").toLowerCase()).filter(Boolean));
+  for(const c of TAG_PALETTE){
+    if(!used.has(c.toLowerCase())) return c;
+  }
+  // fallback: cycle
+  const i = (state.ui?.paletteIdx ?? 0) % TAG_PALETTE.length;
+  const c = TAG_PALETTE[i];
+  state.ui.paletteIdx = i + 1;
+  return c;
+}
+
+function randomPaletteColor(){
+  const cur = (document.getElementById("newTagColor")?.value || "").toLowerCase();
+  const pool = TAG_PALETTE.map(x=>x.toLowerCase());
+  if(pool.length===0) return "#6ee7b7";
+  let c = pool[Math.floor(Math.random()*pool.length)];
+  if(cur && pool.length>1){
+    let guard = 0;
+    while(c===cur && guard++<10){
+      c = pool[Math.floor(Math.random()*pool.length)];
+    }
+  }
+  return c;
+}
+
+function refreshNewTagColor(){
+  const pick = document.getElementById("newTagColor");
+  const hex = document.getElementById("newTagColorHex");
+  if(!pick || !hex) return;
+  const c = nextPaletteColor();
+  pick.value = c;
+  hex.value = c;
+}
+
+function allCustomTagsSorted(){
+  const t = [...state.tags];
+  // pinned first, then alpha
+  t.sort((a,b)=>{
+    if(!!b.pinned !== !!a.pinned) return (b.pinned?1:0)-(a.pinned?1:0);
+    return (a.name||"").localeCompare(b.name||"", "zh-Hans-CN");
+  });
+  return t;
+}
+
+function allTagNamesForLot(lot){
+  const custom = (lot.tags||[]).map(normalizeTagName).filter(Boolean);
+  const sys = systemTagsForLot(lot);
+  return [...new Set([...custom, ...sys])];
+}
+
+function matchText(lot, q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  const d = getDrug(lot.drugId);
+
+  // search across: drug master + lot fields + tags (custom/system)
+  const fields = [
+    d?.name, d?.cnName, d?.alias, d?.cas, d?.manufacturer, d?.drugCode, d?.unit, d?.notes,
+    lot.lotNo, lot.location, lot.unit, lot.status,
+    ...(lot.tags||[]),
+    ...systemTagsForLot(lot),
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  return fields.includes(q);
+}
+
+function matchTags(lot){
+  const tags = allTagNamesForLot(lot).map(t=>t.toLowerCase());
+  const pos = (state.ui.tagSelected||[]).map(t=>t.toLowerCase());
+  const neg = (state.ui.tagExcluded||[]).map(t=>t.toLowerCase());
+
+  // exclude first
+  for(const t of neg){
+    if(tags.includes(t)) return false;
+  }
+  if(pos.length===0) return true;
+  if(state.ui.tagMode==="AND"){
+    return pos.every(t=>tags.includes(t));
+  }
+  return pos.some(t=>tags.includes(t));
+}
+
+function matchStatus(lot){
+  const f = state.ui.statusFilter;
+  if(f==="ALL") return true;
+  const now = new Date();
+  const exp = parseISO(lot.expDate);
+  const sysExpired = exp ? daysBetween(now, exp) < 0 : false;
+  const status = lot.status || "ACTIVE";
+  if(f==="EXPIRED"){
+    return status==="EXPIRED" || (status!=="DISPOSED" && sysExpired);
+  }
+  if(f==="DISPOSED") return status==="DISPOSED";
+  if(f==="QUAR") return status==="QUAR";
+  if(f==="ACTIVE"){
+    // treat auto-expired as expired
+    return status==="ACTIVE" && !sysExpired;
+  }
+  return true;
+}
+
+function matchLocation(lot){
+  const f = (state.ui.locFilter||"").trim().toLowerCase();
+  if(!f) return true;
+  return (lot.location||"").toLowerCase().includes(f);
+}
+
+function filteredLots(){
+  const q = (state.ui.search||"").trim().toLowerCase();
+  let lots = state.lots.filter(l=>matchText(l,q) && matchTags(l) && matchStatus(l) && matchLocation(l));
+  lots = sortLots(lots, state.ui.sortBy);
+  return lots;
+}
+
+function sortLots(lots, mode){
+  const now = new Date();
+  const expKey = (l)=>{
+    const d = parseISO(l.expDate);
+    if(!d) return null;
+    return daysBetween(now, d); // smaller means sooner
+  };
+  const qtyKey = (l)=>Number(l.qty||0);
+  const usedKey = (l)=> l.lastUsedAt ? Date.parse(l.lastUsedAt) : 0;
+
+  const copy = [...lots];
+  copy.sort((a,b)=>{
+    if(mode==="EXP_ASC"){
+      const ea = expKey(a), eb = expKey(b);
+      if(ea===null && eb===null) return usedKey(b)-usedKey(a);
+      if(ea===null) return 1;
+      if(eb===null) return -1;
+      return ea-eb;
+    }
+    if(mode==="EXP_DESC"){
+      const ea = expKey(a), eb = expKey(b);
+      if(ea===null && eb===null) return usedKey(b)-usedKey(a);
+      if(ea===null) return -1;
+      if(eb===null) return 1;
+      return eb-ea;
+    }
+    if(mode==="QTY_ASC") return qtyKey(a)-qtyKey(b);
+    if(mode==="QTY_DESC") return qtyKey(b)-qtyKey(a);
+    if(mode==="USED_DESC") return usedKey(b)-usedKey(a);
+    return 0;
+  });
+  return copy;
+}
+
+/* ============ UI Routing ============ */
+const views = ["home","inventory","log","tags","settings"];
+function setRoute(route){
+  state.ui.route = route;
+  save();
+  for(const v of views){
+    document.getElementById("view-"+v).style.display = (v===route) ? "" : "none";
+    document.querySelectorAll(".nav button").forEach(b=>{
+      b.classList.toggle("active", b.dataset.route===route);
+    });
+  }
+  render();
+}
+document.querySelectorAll(".nav button").forEach(b=>{
+  b.addEventListener("click", ()=>setRoute(b.dataset.route));
+});
+
+/* ============ Render ============ */
+function render(){
+  // pills / side KPIs
+  const lots = state.lots;
+  document.getElementById("pillHome").textContent = " ";
+  document.getElementById("pillInv").textContent = String(lots.length);
+  document.getElementById("pillLog").textContent = String(state.tx.length);
+  document.getElementById("pillTags").textContent = String(state.tags.length);
+
+  const now = new Date();
+  const exp30 = lots.filter(l=>{
+    const exp = parseISO(l.expDate);
+    if(!exp) return false;
+    const d = daysBetween(now, exp);
+    return d>=0 && d<=DAYS_EXP_SOON && (l.status!=="DISPOSED");
+  }).length;
+  const expired = lots.filter(l=>{
+    const exp = parseISO(l.expDate);
+    const isExp = exp ? daysBetween(now, exp)<0 : false;
+    return (l.status==="EXPIRED" || (isExp && l.status!=="DISPOSED"));
+  }).length;
+  const low = lots.filter(l=>{
+    const qty = Number(l.qty||0), minQty=Number(l.minQty||0);
+    return (l.status!=="DISPOSED") && (qty<=0 || (minQty>0 && qty<=minQty));
+  }).length;
+
+  document.getElementById("sideExp").textContent = String(exp30);
+  document.getElementById("sideLow").textContent = String(low);
+
+  // global search input
+  const gs = document.getElementById("globalSearch");
+  if(gs.value !== (state.ui.search||"")) gs.value = state.ui.search||"";
+
+  // route renders
+  if(state.ui.route==="home") renderHome();
+  if(state.ui.route==="inventory") renderInventory();
+  if(state.ui.route==="log") renderLog();
+  if(state.ui.route==="tags") renderTags();
+  if(state.ui.route==="settings") renderSettings();
+}
+
+function renderHome(){
+  const now = new Date();
+  const lots = state.lots;
+
+  document.getElementById("kpiLots").textContent = String(lots.length);
+  const exp30 = lots.filter(l=>{
+    const exp = parseISO(l.expDate);
+    if(!exp) return false;
+    const d = daysBetween(now, exp);
+    return d>=0 && d<=DAYS_EXP_SOON && l.status!=="DISPOSED";
+  }).length;
+  const expired = lots.filter(l=>{
+    const exp = parseISO(l.expDate);
+    const isExp = exp ? daysBetween(now, exp)<0 : false;
+    return (l.status==="EXPIRED" || (isExp && l.status!=="DISPOSED"));
+  }).length;
+  const low = lots.filter(l=>{
+    const qty = Number(l.qty||0), minQty=Number(l.minQty||0);
+    return l.status!=="DISPOSED" && (qty<=0 || (minQty>0 && qty<=minQty));
+  }).length;
+
+  document.getElementById("kpiExp30").textContent = String(exp30);
+  document.getElementById("kpiExpired").textContent = String(expired);
+  document.getElementById("kpiLow").textContent = String(low);
+
+  // Todo table: build list of items
+  const todos = [];
+  for(const lot of lots){
+    if(lot.status==="DISPOSED") continue;
+    const d = getDrug(lot.drugId);
+    const exp = parseISO(lot.expDate);
+    if(exp){
+      const delta = daysBetween(now, exp);
+      if(delta < 0){
+        todos.push({type:"已过期", pri:0, lot, drug:d, info:`已过期 ${Math.abs(delta)} 天`});
+      }else if(delta <= DAYS_EXP_SOON){
+        todos.push({type:"快过期", pri:1, lot, drug:d, info:`剩余 ${delta} 天`});
+      }
+    }
+    const qty = Number(lot.qty||0), minQty=Number(lot.minQty||0);
+    if(qty<=0 || (minQty>0 && qty<=minQty)){
+      todos.push({type:"低库存", pri:2, lot, drug:d, info:`${qty} ${escapeHtml(lot.unit||d?.unit||"")}`});
+    }
+  }
+  todos.sort((a,b)=>a.pri-b.pri);
+
+  const tb = document.getElementById("todoTable");
+  tb.innerHTML = "";
+  const empty = document.getElementById("todoEmpty");
+  empty.style.display = todos.length ? "none" : "";
+  for(const t of todos.slice(0,50)){
+    const lot = t.lot, d = t.drug;
+    const expBadge = buildExpiryBadge(lot);
+    const tr = document.createElement("tr");
+    if(Number(lot.qty||0) < 0) tr.classList.add("negqty");
+    tr.innerHTML = `
+      <td><span class="badge ${t.type==="已过期"?"danger":(t.type==="快过期"?"warn":"ok")}">${escapeHtml(t.type)}</span></td>
+      <td>
+        <div class="name">${escapeHtml(d?.name||"(未命名药品)")}</div>
+        <div class="subline">Lot: <span class="mono">${escapeHtml(lot.lotNo||"-")}</span></div>
+      </td>
+      <td><span class="mono">${escapeHtml(lot.location||"-")}</span></td>
+      <td>${expBadge} <span class="badge">${escapeHtml(t.info)}</span></td>
+      <td>
+        <div class="rowactions">
+          <button class="linkbtn" data-act="jump" data-lot="${lot.id}">查看</button>
+          <button class="linkbtn" data-act="use" data-lot="${lot.id}">领用</button>
+          <button class="linkbtn" data-act="edit" data-lot="${lot.id}">编辑</button>
+        </div>
+      </td>
+    `;
+    tb.appendChild(tr);
+  }
+  tb.querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const lotId = b.dataset.lot;
+      if(b.dataset.act==="jump"){
+        // set filters to focus this lot by lotNo
+        const lot = getLot(lotId);
+        if(lot){
+          state.ui.route="inventory";
+          state.ui.search = lot.lotNo || (getDrug(lot.drugId)?.name||"");
+          state.ui.tagSelected=[];
+          state.ui.tagExcluded=[];
+          save();
+          setRoute("inventory");
+        }
+      }
+      if(b.dataset.act==="use") openUseModal(lotId);
+      if(b.dataset.act==="edit") openEditLotModal(lotId);
+    });
+  });
+
+  // recent tx
+  const recent = [...state.tx].sort((a,b)=>Date.parse(b.timeISO)-Date.parse(a.timeISO)).slice(0,20);
+  const rt = document.getElementById("recentTable");
+  rt.innerHTML="";
+  document.getElementById("recentEmpty").style.display = recent.length ? "none" : "";
+  for(const tx of recent){
+    const lot = getLot(tx.lotId);
+    const d = lot ? getDrug(lot.drugId) : null;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(tx.timeISO.replace("T"," ").slice(0,19))}</td>
+      <td>${escapeHtml(txTypeLabel(tx.type))}</td>
+      <td>${escapeHtml(d?.name||"-")}</td>
+      <td class="mono">${escapeHtml(lot?.lotNo||"-")}</td>
+      <td class="mono">${escapeHtml(fmtDelta(tx.qtyDelta, lot?.unit || d?.unit))}</td>
+      <td>${escapeHtml(tx.note||"")}</td>
+    `;
+    rt.appendChild(tr);
+  }
+}
+
+function buildExpiryBadge(lot){
+  const now = new Date();
+  const exp = parseISO(lot.expDate);
+  if(!exp) return `<span class="badge">无有效期</span>`;
+  const d = daysBetween(now, exp);
+  if(d<0) return `<span class="badge danger">已过期</span>`;
+  if(d<=DAYS_EXP_SOON) return `<span class="badge warn">快过期</span>`;
+  return `<span class="badge ok">有效</span>`;
+}
+
+function renderInventory(){
+  // sync controls
+  document.getElementById("tagMode").value = state.ui.tagMode||"OR";
+  document.getElementById("statusFilter").value = state.ui.statusFilter||"ALL";
+  document.getElementById("sortBy").value = state.ui.sortBy||"EXP_ASC";
+  document.getElementById("locFilter").value = state.ui.locFilter||"";
+
+  // tag chips (system + custom)
+  const chips = document.getElementById("tagChips");
+  chips.innerHTML="";
+  const makeChip = (name, opts={})=>{
+    const on = (state.ui.tagSelected||[]).includes(name);
+    const neg = (state.ui.tagExcluded||[]).includes(name);
+    const c = document.createElement("div");
+    c.className = "chip " + (opts.system?"system ":"") + (on?"on ":"") + (neg?"neg ":"");
+    const color = opts.color || "rgba(255,255,255,.35)";
+    c.innerHTML = `<span class="dot" style="background:${color}"></span><span>${escapeHtml(name)}</span>`;
+    c.title = opts.system ? "系统标签（自动）" : "自定义标签";
+    c.addEventListener("click", (e)=>{
+      // cycle: off -> selected -> excluded -> off
+      const sel = new Set(state.ui.tagSelected||[]);
+      const exc = new Set(state.ui.tagExcluded||[]);
+      if(!sel.has(name) && !exc.has(name)){
+        sel.add(name);
+      }else if(sel.has(name)){
+        sel.delete(name); exc.add(name);
+      }else{
+        exc.delete(name);
+      }
+      state.ui.tagSelected = [...sel];
+      state.ui.tagExcluded = [...exc];
+      save(); renderInventory();
+    });
+    chips.appendChild(c);
+  };
+
+  // system tags first
+  SYSTEM_TAGS.forEach(t=>makeChip(t.name,{system:true,color:"rgba(255,255,255,.35)"}));
+  // custom tags
+  allCustomTagsSorted().forEach(t=>makeChip(t.name,{system:false,color:t.color||"rgba(110,231,183,.7)"}));
+
+  // filtered table
+  const lots = filteredLots();
+  const tbody = document.getElementById("invTable");
+  tbody.innerHTML="";
+  document.getElementById("invEmpty").style.display = lots.length ? "none" : "";
+
+  for(const lot of lots){
+    const d = getDrug(lot.drugId);
+    const tags = (lot.tags||[]).slice(0,3);
+    const sys = systemTagsForLot(lot).slice(0,2);
+    const more = Math.max(0, (lot.tags||[]).length + systemTagsForLot(lot).length - (tags.length+sys.length));
+    const expBadge = buildExpiryBadge(lot);
+    const statusBadge = lot.status==="QUAR" ? `<span class="badge warn">隔离</span>` :
+                       lot.status==="DISPOSED" ? `<span class="badge danger">已报废</span>` : ``;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="name">${escapeHtml(d?.name||"(未命名药品)")}</div>
+        <div class="subline">中文名：${escapeHtml(d?.cnName||"-")} · 别名：${escapeHtml(d?.alias||"-")} · 单位：${escapeHtml(lot.unit || d?.unit || "-")}</div>
+        <details>
+          <summary>展开详情</summary>
+          <div class="hint">
+            中文名：${escapeHtml(d?.cnName||"-")} · CAS：<span class="mono">${escapeHtml(d?.cas||"-")}</span> · 厂家：${escapeHtml(d?.manufacturer||"-")} · 编号：<span class="mono">${escapeHtml(d?.drugCode||"-")}</span><br/>
+            备注：${escapeHtml(d?.notes||"") || "<span class='muted'>无</span>"}<br/>
+            开封：${escapeHtml(lot.openedDate||"-")} · 最近使用：${escapeHtml(lot.lastUsedAt?lot.lastUsedAt.replace("T"," ").slice(0,19):"-")}<br/>
+            批次标签：${escapeHtml((lot.tags||[]).join(", ")||"无")}
+          </div>
+        </details>
+      </td>
+      <td>
+        <div class="mono">Lot: ${escapeHtml(lot.lotNo||"-")}</div>
+        <div class="subline">有效期：${escapeHtml(lot.expDate||"-")}</div>
+        <div style="margin-top:8px;">${expBadge} ${statusBadge}</div>
+      </td>
+      <td class="mono">${escapeHtml(lot.qty ?? 0)} ${escapeHtml(lot.unit || d?.unit || "")} ${Number(lot.qty||0) < 0 ? `<span class="badge danger">负库存</span>` : ``}</td>
+      <td class="mono">${escapeHtml(lot.location||"-")}</td>
+      <td>
+        ${sys.map(t=>{
+          const c = (SYSTEM_TAGS.find(x=>x.name===t)?.color) || "#94a3b8";
+          return `<span class="badge" style="--accent:${c};">${escapeHtml(t)}</span>`;
+        }).join("")}
+        ${tags.map(t=>{
+          const c = (state.tags.find(x=>x.name===t)?.color) || "rgba(255,255,255,.14)";
+          return `<span class="badge" style="--accent:${c};">${escapeHtml(t)}</span>`;
+        }).join("")}
+        ${more>0?`<span class="badge">+${more}</span>`:""}
+      </td>
+      <td>
+        <div class="rowactions">
+          <button class="linkbtn" data-act="use" data-lot="${lot.id}">领用</button>
+          <button class="linkbtn" data-act="edit" data-lot="${lot.id}">编辑</button>
+          <button class="linkbtn" data-act="more" data-lot="${lot.id}">更多</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  tbody.querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const lotId = b.dataset.lot;
+      if(b.dataset.act==="use") openUseModal(lotId);
+      if(b.dataset.act==="edit") openEditLotModal(lotId);
+      if(b.dataset.act==="more") openMoreActions(lotId);
+    });
+  });
+}
+
+function renderLog(){
+  // tx table
+  const tx = [...state.tx].sort((a,b)=>Date.parse(b.timeISO)-Date.parse(a.timeISO));
+  const tbody = document.getElementById("txTable");
+  tbody.innerHTML="";
+  document.getElementById("txEmpty").style.display = tx.length ? "none" : "";
+  for(const t of tx.slice(0,500)){
+    const lot = getLot(t.lotId);
+    const d = lot ? getDrug(lot.drugId) : null;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(t.timeISO.replace("T"," ").slice(0,19))}</td>
+      <td>${escapeHtml(txTypeLabel(t.type))}</td>
+      <td>${escapeHtml(d?.name||"-")}</td>
+      <td class="mono">${escapeHtml(lot?.lotNo||"-")}</td>
+      <td class="mono">${escapeHtml(fmtDelta(t.qtyDelta, lot?.unit || d?.unit))}</td>
+      <td>${escapeHtml(t.note||"")}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function renderTags(){
+  // system chips
+  const sys = document.getElementById("systemChips");
+  sys.innerHTML="";
+  refreshNewTagColor();
+  for(const t of SYSTEM_TAGS){
+    const c = document.createElement("div");
+    c.className = "chip system";
+    c.innerHTML = `<span class="dot" style="background:${escapeHtml(t.color||"#94a3b8")}"></span><span>${escapeHtml(t.name)}</span><span class="mini">· ${escapeHtml(t.desc)}</span>`;
+    sys.appendChild(c);
+  }
+
+  // tag table
+  const tbody = document.getElementById("tagTable");
+  tbody.innerHTML="";
+  const tags = allCustomTagsSorted();
+  document.getElementById("tagEmpty").style.display = tags.length ? "none" : "";
+  for(const tag of tags){
+    const cnt = countTagUsage(tag.name);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="badge" style="--accent:${escapeHtml(tag.color||"#6ee7b7")};">${escapeHtml(tag.name)}</span></td>
+      <td>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input type="text" value="${escapeHtml(tag.color||"#6ee7b7")}" data-act="hex" data-tag="${escapeHtml(tag.name)}"
+            class="smallinput" style="width:140px; max-width:180px;" />
+          <input type="color" value="${escapeHtml(tag.color||"#6ee7b7")}" data-act="color" data-tag="${escapeHtml(tag.name)}"
+            style="width:44px; height:34px; padding:0; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(7,10,15,.55);" />
+        </div>
+      </td>
+      <td class="mono">${cnt}</td>
+      <td>
+        <button class="linkbtn" data-act="pin" data-tag="${escapeHtml(tag.name)}">${tag.pinned?"取消置顶":"置顶"}</button>
+      </td>
+      <td>
+        <div class="rowactions">
+          <button class="linkbtn" data-act="rename" data-tag="${escapeHtml(tag.name)}">重命名</button>
+          <button class="linkbtn" data-act="merge" data-tag="${escapeHtml(tag.name)}">合并到…</button>
+          <button class="linkbtn" data-act="del" data-tag="${escapeHtml(tag.name)}">删除</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // tag actions
+  tbody.querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const name = b.dataset.tag;
+      if(b.dataset.act==="pin"){
+        const t = state.tags.find(x=>x.name===name);
+        if(t){ t.pinned = !t.pinned; save(); renderTags(); renderInventory(); }
+      }
+      if(b.dataset.act==="rename") openRenameTag(name);
+      if(b.dataset.act==="merge") openMergeTag(name);
+      if(b.dataset.act==="del") deleteTag(name);
+    });
+  });
+
+  // color editing (picker)
+  tbody.querySelectorAll('input[data-act="color"]').forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const name = inp.dataset.tag;
+      const t = state.tags.find(x=>x.name===name);
+      if(!t) return;
+      const v = (inp.value||"#6ee7b7").toLowerCase();
+      t.color = v;
+
+      const hex = tbody.querySelector(`input[data-act="hex"][data-tag="${name.replaceAll('"','&quot;')}"]`);
+      if(hex) hex.value = v;
+
+      save();
+      renderInventory(); // refresh chips
+    });
+  });
+
+  // color editing (hex)
+  tbody.querySelectorAll('input[data-act="hex"]').forEach(inp=>{
+    const apply = ()=>{
+      const name = inp.dataset.tag;
+      const t = state.tags.find(x=>x.name===name);
+      if(!t) return;
+      const v = normalizeHexColor(inp.value);
+      if(!v){
+        toast("颜色格式无效", "请输入 #RRGGBB");
+        inp.value = t.color || "#6ee7b7";
+        return;
+      }
+      t.color = v;
+
+      const pick = tbody.querySelector(`input[data-act="color"][data-tag="${name.replaceAll('"','&quot;')}"]`);
+      if(pick) pick.value = v;
+
+      inp.value = v;
+      save();
+      renderInventory();
+    };
+    inp.addEventListener("change", apply);
+    inp.addEventListener("blur", apply);
+  });
+}
+
+function renderSettings(){
+  // nothing dynamic currently
+}
+
+/* ============ Tag Usage ============ */
+function countTagUsage(tagName){
+  let n=0;
+  for(const lot of state.lots){
+    if((lot.tags||[]).includes(tagName)) n++;
+  }
+  for(const d of state.drugs){
+    if((d.defaultTags||[]).includes(tagName)) n++;
+  }
+  return n;
+}
+
+function ensureTagExists(name, color=null){
+  name = normalizeTagName(name);
+  if(!name) return;
+  const existing = state.tags.find(t=>t.name===name);
+  const c = normalizeHexColor(color);
+  if(!existing){
+    state.tags.push({name, color: c || "#6ee7b7", pinned:false});
+  }else{
+    if(c) existing.color = c;
+  }
+}
+
+/* ============ Transactions ============ */
+function txTypeLabel(t){
+  if(t==="IN") return "入库";
+  if(t==="USE") return "领用";
+  if(t==="ADJ") return "调整";
+  if(t==="DISP") return "报废/销毁";
+  return t;
+}
+function fmtDelta(delta, unit){
+  const u = unit ? (" "+unit) : "";
+  if(delta>0) return `+${delta}${u}`;
+  return `${delta}${u}`;
+}
+function addTx(type, lotId, qtyDelta, note){
+  state.tx.push({id:uid("tx"), timeISO:new Date().toISOString(), type, lotId, qtyDelta:Number(qtyDelta||0), note: note||""});
+  const lot = getLot(lotId);
+  if(lot){
+    lot.updatedAt = new Date().toISOString();
+    if(type==="USE") lot.lastUsedAt = new Date().toISOString();
+  }
+  save();
+}
+
+/* ============ CRUD: Drugs/Lots ============ */
+function upsertDrugByName(name, alias, unit, notes, cnName, cas, manufacturer, drugCode){
+  name = normalizeTagName(name);
+  if(!name) throw new Error("药品名不能为空");
+  let d = state.drugs.find(x=>x.name===name);
+  if(!d){
+    d = {id:uid("drug"), name, cnName:cnName||"", cas:cas||"", manufacturer:manufacturer||"", drugCode:drugCode||"", alias:alias||"", unit:unit||"", defaultLocation:"", defaultTags:[], notes:notes||""};
+    state.drugs.push(d);
+  }else{
+    if(alias!==undefined) d.alias = alias||d.alias||"";
+    if(unit!==undefined) d.unit = unit||d.unit||"";
+    if(notes!==undefined) d.notes = notes||d.notes||"";
+    if(cnName!==undefined) d.cnName = cnName||d.cnName||"";
+    if(cas!==undefined) d.cas = cas||d.cas||"";
+    if(manufacturer!==undefined) d.manufacturer = manufacturer||d.manufacturer||"";
+    if(drugCode!==undefined) d.drugCode = drugCode||d.drugCode||"";
+  }
+  return d;
+}
+
+function createLot(drugId, lot){
+  const d = getDrug(drugId);
+  if(!d) throw new Error("找不到药品");
+  const l = {
+    id: uid("lot"),
+    drugId,
+    lotNo: lot.lotNo||"",
+    expDate: lot.expDate||"",
+    openedDate: lot.openedDate||"",
+    qty: Number(lot.qty||0),
+    minQty: (isFinite(Number(lot.minQty||0)) ? Math.max(0, Number(lot.minQty||0)) : 0),
+    unit: lot.unit || d.unit || "",
+    location: lot.location || d.defaultLocation || "",
+    tags: (lot.tags||[]).map(normalizeTagName).filter(Boolean),
+    status: lot.status || "ACTIVE",
+    updatedAt: new Date().toISOString(),
+    lastUsedAt: ""
+  };
+  // ensure custom tags exist
+  l.tags.forEach(t=>ensureTagExists(t));
+  state.lots.push(l);
+  save();
+  return l;
+}
+
+function updateLot(lotId, patch){
+  const l = getLot(lotId);
+  if(!l) throw new Error("找不到批次");
+  Object.assign(l, patch);
+  l.qty = Number(l.qty||0);
+  if(!isFinite(l.qty)) l.qty = 0;
+  l.minQty = Number(l.minQty||0);
+  if(!isFinite(l.minQty) || l.minQty < 0) l.minQty = 0;
+  l.tags = (l.tags||[]).map(normalizeTagName).filter(Boolean);
+  l.updatedAt = new Date().toISOString();
+  l.tags.forEach(t=>ensureTagExists(t));
+  save();
+}
+
+/* ============ Modal Helpers ============ */
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+const modalFoot = document.getElementById("modalFoot");
+
+function closeModal(){
+  modal.classList.remove("on");
+  modalTitle.textContent = "";
+  modalBody.innerHTML = "";
+  modalFoot.innerHTML = "";
+}
+document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+
+function openModal(title, bodyHTML, footHTML){
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHTML;
+  modalFoot.innerHTML = footHTML;
+  modal.classList.add("on");
+  // focus first input
+  setTimeout(()=>{
+    const el = modalBody.querySelector("input,select,textarea,button");
+    if(el) el.focus();
+  }, 50);
+}
+
+/* ============ Modals: In / Use / Adj / Dispose / Edit ============ */
+function buildTagInput(id, preset=[]){
+  const opts = allCustomTagsSorted().map(t=>`<option value="${escapeHtml(t.name)}"></option>`).join("");
+  const val = preset.join(", ");
+  const dlId = `taglist_${id}`;
+  return `
+    <label>标签（逗号分隔；可直接输入新标签）</label>
+    <input list="${dlId}" id="${id}" type="text" value="${escapeHtml(val)}" placeholder="如：抗生素, Project-A, 常用" />
+    <datalist id="${dlId}">${opts}</datalist>
+    <div class="hint">提示：点击库存页标签可筛选；标签支持置顶/合并。</div>
+  `;
+}
+
+function parseTagInput(s){
+  return (s||"").split(",").map(x=>normalizeTagName(x)).filter(Boolean);
+}
+
+function openInModal(){
+  const drugs = [...state.drugs].sort((a,b)=>a.name.localeCompare(b.name,"zh-Hans-CN"));
+  const datalist = drugs.map(d=>`<option value="${escapeHtml(d.name)}"></option>`).join("");
+
+  openModal("入库（创建/补充批次）", `
+    <div class="formgrid">
+      <div class="full">
+        <label>药品名</label>
+        <input id="inDrug" list="druglist" type="text" placeholder="如：Ampicillin" />
+        <datalist id="druglist">${datalist}</datalist>
+        <div class="hint">若药品不存在，会自动创建（可后续在编辑里补充别名/备注）。</div>
+      </div>
+      <div>
+        <label>别名（可选）</label>
+        <input id="inAlias" type="text" placeholder="如：Amp" />
+      </div>
+      <div>
+        <label>单位（可选）</label>
+        <input id="inUnit" type="text" placeholder="如：mL / mg / vial" />
+      </div>
+      <div>
+        <label>中文名称（可选）</label>
+        <input id="inCnName" type="text" placeholder="如：氨苄西林" />
+      </div>
+      <div>
+        <label>CAS 号（可选）</label>
+        <input id="inCAS" type="text" placeholder="如：69-53-4" />
+      </div>
+      <div>
+        <label>厂家（可选）</label>
+        <input id="inMfg" type="text" placeholder="如：Sigma / Thermo / 自配" />
+      </div>
+      <div>
+        <label>药物编号（可选）</label>
+        <input id="inCode" type="text" placeholder="如：内部编号 / Catalog#" />
+      </div>
+
+      <div>
+        <label>批号 Lot（可选）</label>
+        <input id="inLotNo" type="text" placeholder="如：LOT2026-01" />
+      </div>
+      <div>
+        <label>有效期（可选）</label>
+        <input id="inExp" type="date" />
+      </div>
+      <div>
+        <label>开封日期（可选）</label>
+        <input id="inOpen" type="date" />
+      </div>
+      <div>
+        <label>数量</label>
+        <input id="inQty" type="number" step="any" value="1" />
+      </div>
+      <div>
+        <label>低库存阈值（可选）</label>
+        <input id="inMin" type="number" step="any" value="0" />
+      </div>
+      <div class="full">
+        <label>位置</label>
+        <input id="inLoc" type="text" placeholder="如：-20℃ / Freezer2 / Shelf3 / BoxA" />
+      </div>
+      <div class="full">${buildTagInput("inTags")}</div>
+      <div class="full">
+        <label>备注（可选）</label>
+        <textarea id="inNote" placeholder="如：用于qPCR；避光；批次效价偏低等"></textarea>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnSubmitIn">入库</button>
+  `);
+
+  document.getElementById("inExp").value = "";
+  document.getElementById("inOpen").value = "";
+
+  document.getElementById("btnSubmitIn").addEventListener("click", ()=>{
+    try{
+      const name = document.getElementById("inDrug").value.trim();
+      const alias = document.getElementById("inAlias").value.trim();
+      const unit = document.getElementById("inUnit").value.trim();
+      const note = document.getElementById("inNote").value.trim();
+      const cnName = document.getElementById("inCnName").value.trim();
+      const cas = document.getElementById("inCAS").value.trim();
+      const manufacturer = document.getElementById("inMfg").value.trim();
+      const drugCode = document.getElementById("inCode").value.trim();
+      const lotNo = document.getElementById("inLotNo").value.trim();
+      const expDate = document.getElementById("inExp").value;
+      const openedDate = document.getElementById("inOpen").value;
+      const qty = Number(document.getElementById("inQty").value||0);
+      const minQty = Number(document.getElementById("inMin").value||0);
+      const location = document.getElementById("inLoc").value.trim();
+      const tags = parseTagInput(document.getElementById("inTags").value);
+
+      let finalName = name;
+      const existing = state.drugs.find(x=>x.name===name);
+      if(existing && cas && existing.cas && (existing.cas.trim() !== cas.trim())){
+        const createNew = confirm(`检测到同名药品“${name}”已存在，但CAS不同：
+- 现有：${existing.cas}
+- 新增：${cas}
+
+是否创建一个新的药品条目？（建议：同名不同CAS分开管理）`);
+        if(createNew){
+          finalName = `${name} (CAS:${cas})`;
+          let k = 2;
+          while(state.drugs.some(x=>x.name===finalName)){
+            finalName = `${name} (CAS:${cas})-${k++}`;
+          }
+        }
+      }
+      const d = upsertDrugByName(finalName, alias, unit, note, cnName, cas, manufacturer, drugCode);
+      const lot = createLot(d.id, {lotNo, expDate, openedDate, qty, minQty, unit: unit||d.unit, location, tags, status:"ACTIVE"});
+      addTx("IN", lot.id, qty, note);
+      closeModal();
+      toast("入库成功", `${d.name} · Lot ${lot.lotNo||"-"} +${qty}${lot.unit?(" "+lot.unit):""}`);
+      render();
+    }catch(e){
+      toast("入库失败", e.message||String(e));
+    }
+  });
+}
+
+function openUseModal(lotId=null){
+  const lots = sortLots(state.lots.filter(l=>l.status!=="DISPOSED"), "USED_DESC");
+  const options = lots.map(l=>{
+    const d = getDrug(l.drugId);
+    return `<option value="${l.id}">${escapeHtml(d?.name||"-")} · Lot ${escapeHtml(l.lotNo||"-")} · ${escapeHtml(l.qty)} ${escapeHtml(l.unit||d?.unit||"")} · ${escapeHtml(l.location||"")}</option>`;
+  }).join("");
+
+  openModal("领用（扣减数量）", `
+    <div class="formgrid">
+      <div class="full">
+        <label>选择批次</label>
+        <select id="useLot">${options}</select>
+      </div>
+      <div>
+        <label>领用数量</label>
+        <input id="useQty" type="number" step="any" value="1" />
+        <div class="hint">会从当前数量中扣减</div>
+      </div>
+      <div>
+        <label>用途/备注（可选）</label>
+        <input id="useNote" type="text" placeholder="如：WB；Mouse#12；Project-A" />
+      </div>
+      <div class="full">
+        ${buildTagInput("useAddTags")}
+        <div class="hint">此处标签会<strong>追加到该批次</strong>（适合记录“待替换/效价偏低”等批次状态）。</div>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnSubmitUse">确认领用</button>
+  `);
+
+  if(lotId) document.getElementById("useLot").value = lotId;
+
+  // preset qty to 1 but clamp if needed
+  document.getElementById("btnSubmitUse").addEventListener("click", ()=>{
+    try{
+      const id = document.getElementById("useLot").value;
+      const lot = getLot(id);
+      if(!lot) throw new Error("找不到批次");
+      const qty = Number(document.getElementById("useQty").value||0);
+      if(!isFinite(qty) || qty<=0) throw new Error("领用数量需 > 0");
+      if(qty > Number(lot.qty||0)) {
+        // allow but warn
+        if(!confirm(`领用数量(${qty}) > 当前库存(${lot.qty})，仍要继续吗？（会变为负数）`)) return;
+      }
+      const note = document.getElementById("useNote").value.trim();
+      const addTags = parseTagInput(document.getElementById("useAddTags").value);
+      updateLot(id, { qty: Number(lot.qty||0) - qty, tags: [...new Set([...(lot.tags||[]), ...addTags])] });
+      addTx("USE", id, -qty, note);
+      const after = getLot(id);
+      if(after && Number(after.qty||0) < 0){
+        toast("警告：库存为负", "建议尽快用“盘点调整”修正数量。");
+      }
+      closeModal();
+      toast("领用已记录", `${getDrug(lot.drugId)?.name||""} -${qty}${lot.unit?(" "+lot.unit):""}`);
+      render();
+    }catch(e){
+      toast("领用失败", e.message||String(e));
+    }
+  });
+}
+
+function openAdjustModal(){
+  const lots = sortLots(state.lots.filter(l=>l.status!=="DISPOSED"), "EXP_ASC");
+  const options = lots.map(l=>{
+    const d = getDrug(l.drugId);
+    return `<option value="${l.id}">${escapeHtml(d?.name||"-")} · Lot ${escapeHtml(l.lotNo||"-")} · 当前 ${escapeHtml(l.qty)} ${escapeHtml(l.unit||d?.unit||"")}</option>`;
+  }).join("");
+
+  openModal("盘点调整（设置为目标数量）", `
+    <div class="formgrid">
+      <div class="full">
+        <label>选择批次</label>
+        <select id="adjLot">${options}</select>
+      </div>
+      <div>
+        <label>目标数量（盘点后实际）</label>
+        <input id="adjTarget" type="number" step="any" value="0" />
+      </div>
+      <div>
+        <label>备注（建议填写原因）</label>
+        <input id="adjNote" type="text" placeholder="如：盘点；损耗；转移未记录等" />
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnSubmitAdj">确认调整</button>
+  `);
+
+  // auto fill target with current qty when lot changes
+  const sel = document.getElementById("adjLot");
+  const target = document.getElementById("adjTarget");
+  const syncTarget = ()=>{
+    const lot = getLot(sel.value);
+    if(lot) target.value = String(lot.qty??0);
+  };
+  sel.addEventListener("change", syncTarget);
+  syncTarget();
+
+  document.getElementById("btnSubmitAdj").addEventListener("click", ()=>{
+    try{
+      const id = sel.value;
+      const lot = getLot(id);
+      if(!lot) throw new Error("找不到批次");
+      const newQty = Number(target.value||0);
+      if(!isFinite(newQty)) throw new Error("数量不合法");
+      const delta = newQty - Number(lot.qty||0);
+      const note = document.getElementById("adjNote").value.trim();
+      updateLot(id, {qty:newQty});
+      addTx("ADJ", id, delta, note || "盘点调整");
+      closeModal();
+      toast("已调整", `变化 ${fmtDelta(delta, lot.unit || getDrug(lot.drugId)?.unit)}`);
+      render();
+    }catch(e){
+      toast("调整失败", e.message||String(e));
+    }
+  });
+}
+
+function openDisposeModal(){
+  const lots = sortLots(state.lots.filter(l=>l.status!=="DISPOSED"), "EXP_ASC");
+  const options = lots.map(l=>{
+    const d = getDrug(l.drugId);
+    return `<option value="${l.id}">${escapeHtml(d?.name||"-")} · Lot ${escapeHtml(l.lotNo||"-")} · ${escapeHtml(l.qty)} ${escapeHtml(l.unit||d?.unit||"")}</option>`;
+  }).join("");
+
+  openModal("报废/销毁（将状态置为DISPOSED）", `
+    <div class="formgrid">
+      <div class="full">
+        <label>选择批次</label>
+        <select id="dispLot">${options}</select>
+      </div>
+      <div class="full">
+        <label>原因/备注（必填）</label>
+        <input id="dispNote" type="text" placeholder="如：过期；污染；失活；破损等" />
+      </div>
+      <div class="full">
+        <div class="hint">提示：报废不会删除数据；可用于审计与复盘。</div>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn danger" id="btnSubmitDisp">确认报废/销毁</button>
+  `);
+
+  document.getElementById("btnSubmitDisp").addEventListener("click", ()=>{
+    try{
+      const id = document.getElementById("dispLot").value;
+      const lot = getLot(id);
+      if(!lot) throw new Error("找不到批次");
+      const note = document.getElementById("dispNote").value.trim();
+      if(!note) throw new Error("原因/备注必填");
+      updateLot(id, {status:"DISPOSED"});
+      addTx("DISP", id, 0, note);
+      closeModal();
+      toast("已报废/销毁", `${getDrug(lot.drugId)?.name||""} · Lot ${lot.lotNo||"-"}`);
+      render();
+    }catch(e){
+      toast("操作失败", e.message||String(e));
+    }
+  });
+}
+
+function openEditLotModal(lotId){
+  const lot = getLot(lotId);
+  if(!lot){ toast("找不到批次"); return; }
+  const d = getDrug(lot.drugId);
+
+  openModal("编辑批次", `
+    <div class="formgrid">
+      <div class="full">
+        <div class="hint">药品：<b>${escapeHtml(d?.name||"-")}</b>（如需改药名，请在入库时创建新的药品，或直接改药品名会影响同名匹配。）</div>
+      </div>
+      <div>
+        <label>批号 Lot</label>
+        <input id="edLotNo" type="text" value="${escapeHtml(lot.lotNo||"")}" />
+      </div>
+      <div>
+        <label>状态</label>
+        <select id="edStatus">
+          <option value="ACTIVE">可用</option>
+          <option value="QUAR">隔离</option>
+          <option value="EXPIRED">标记过期</option>
+          <option value="DISPOSED">已报废/销毁</option>
+        </select>
+      </div>
+      <div>
+        <label>有效期</label>
+        <input id="edExp" type="date" value="${escapeHtml(lot.expDate||"")}" />
+      </div>
+      <div>
+        <label>开封日期</label>
+        <input id="edOpen" type="date" value="${escapeHtml(lot.openedDate||"")}" />
+      </div>
+      <div>
+        <label>数量</label>
+        <input id="edQty" type="number" step="any" value="${escapeHtml(lot.qty??0)}" />
+      </div>
+      <div>
+        <label>低库存阈值</label>
+        <input id="edMin" type="number" step="any" value="${escapeHtml(lot.minQty??0)}" />
+      </div>
+      <div class="full">
+        <label>单位</label>
+        <input id="edUnit" type="text" value="${escapeHtml(lot.unit || d?.unit || "")}" />
+      </div>
+      <div class="full">
+        <label>位置</label>
+        <input id="edLoc" type="text" value="${escapeHtml(lot.location||"")}" />
+      </div>
+      <div class="full">${buildTagInput("edTags", lot.tags||[])}</div>
+      <div class="full">
+        <label>药品中文名称（可选）</label>
+        <input id="edCnName" type="text" value="${escapeHtml(d?.cnName||"")}" />
+      </div>
+      <div class="full">
+        <label>CAS 号（可选）</label>
+        <input id="edCAS" type="text" value="${escapeHtml(d?.cas||"")}" />
+      </div>
+      <div class="full">
+        <label>厂家（可选）</label>
+        <input id="edMfg" type="text" value="${escapeHtml(d?.manufacturer||"")}" />
+      </div>
+      <div class="full">
+        <label>药物编号（可选）</label>
+        <input id="edCode" type="text" value="${escapeHtml(d?.drugCode||"")}" />
+      </div>
+      <div class="full">
+        <label>药品别名（可选，写到药品主数据）</label>
+        <input id="edAlias" type="text" value="${escapeHtml(d?.alias||"")}" />
+      </div>
+      <div class="full">
+        <label>药品备注（可选，写到药品主数据）</label>
+        <textarea id="edDrugNotes">${escapeHtml(d?.notes||"")}</textarea>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnSubmitEdit">保存</button>
+  `);
+
+  document.getElementById("edStatus").value = lot.status || "ACTIVE";
+
+  document.getElementById("btnSubmitEdit").addEventListener("click", ()=>{
+    try{
+      const patch = {
+        lotNo: document.getElementById("edLotNo").value.trim(),
+        status: document.getElementById("edStatus").value,
+        expDate: document.getElementById("edExp").value,
+        openedDate: document.getElementById("edOpen").value,
+        qty: Number(document.getElementById("edQty").value||0),
+        minQty: Number(document.getElementById("edMin").value||0),
+        unit: document.getElementById("edUnit").value.trim(),
+        location: document.getElementById("edLoc").value.trim(),
+        tags: parseTagInput(document.getElementById("edTags").value),
+      };
+      updateLot(lotId, patch);
+      // update drug master alias/notes
+      if(d){
+        d.cnName = document.getElementById("edCnName").value.trim();
+        d.cas = document.getElementById("edCAS").value.trim();
+        d.manufacturer = document.getElementById("edMfg").value.trim();
+        d.drugCode = document.getElementById("edCode").value.trim();
+        d.alias = document.getElementById("edAlias").value.trim();
+        d.notes = document.getElementById("edDrugNotes").value.trim();
+      }
+      save();
+      closeModal();
+      toast("已保存", "批次与药品信息已更新");
+      render();
+    }catch(e){
+      toast("保存失败", e.message||String(e));
+    }
+  });
+}
+
+function openMoreActions(lotId){
+  const lot = getLot(lotId);
+  const d = lot ? getDrug(lot.drugId) : null;
+  if(!lot) return;
+
+  openModal("更多操作", `
+    <div class="card">
+      <div class="name">${escapeHtml(d?.name||"-")}</div>
+      <div class="subline">Lot: <span class="mono">${escapeHtml(lot.lotNo||"-")}</span> · ${escapeHtml(lot.qty)} ${escapeHtml(lot.unit||d?.unit||"")}</div>
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn primary" id="maUse">领用</button>
+        <button class="btn" id="maAdj">盘点调整</button>
+        <button class="btn danger" id="maZero">设为0（调整）</button>
+        <button class="btn" id="maEdit">编辑</button>
+        <button class="btn danger" id="maDisp">报废/销毁</button>
+      </div>
+      <div class="hint" style="margin-top:12px;">提示：你也可以直接在库存页用“标签筛选”快速定位同类药。</div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">关闭</button>
+  `);
+
+  document.getElementById("maUse").addEventListener("click", ()=>{ closeModal(); openUseModal(lotId); });
+  document.getElementById("maAdj").addEventListener("click", ()=>{ closeModal(); openAdjustModal(); });
+  document.getElementById("maZero").addEventListener("click", ()=>{
+    const l = getLot(lotId);
+    if(!l) return;
+    const unit = l.unit || getDrug(l.drugId)?.unit;
+    const delta = 0 - Number(l.qty||0);
+    if(!confirm(`确认将该批次数量设为0？（会生成一条“调整”流水，变化为 ${fmtDelta(delta, unit)}）`)) return;
+    updateLot(lotId, {qty:0});
+    addTx("ADJ", lotId, delta, "一键归零（调整）");
+    closeModal();
+    toast("已设为0", `变化 ${fmtDelta(delta, unit)}`);
+    render();
+  });
+  document.getElementById("maEdit").addEventListener("click", ()=>{ closeModal(); openEditLotModal(lotId); });
+  document.getElementById("maDisp").addEventListener("click", ()=>{ closeModal(); openDisposeModal(); });
+}
+
+/* ============ Tag Operations ============ */
+function openRenameTag(oldName){
+  openModal("重命名标签", `
+    <div class="formgrid">
+      <div class="full">
+        <label>原标签</label>
+        <input type="text" value="${escapeHtml(oldName)}" disabled />
+      </div>
+      <div class="full">
+        <label>新标签名</label>
+        <input id="rnNew" type="text" value="${escapeHtml(oldName)}" />
+        <div class="hint">会同步更新所有批次与药品默认标签。</div>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnDoRename">确认</button>
+  `);
+
+  document.getElementById("btnDoRename").addEventListener("click", ()=>{
+    try{
+      const nn = normalizeTagName(document.getElementById("rnNew").value);
+      if(!nn) throw new Error("新标签名不能为空");
+      if(nn===oldName){ closeModal(); return; }
+      if(SYSTEM_TAGS.some(t=>t.name===nn)) throw new Error("不能与系统标签重名");
+      // update tags list
+      const t = state.tags.find(x=>x.name===oldName);
+      if(t) t.name = nn;
+      // update lots/drugs
+      for(const l of state.lots){
+        l.tags = (l.tags||[]).map(x=>x===oldName?nn:x);
+      }
+      for(const d of state.drugs){
+        d.defaultTags = (d.defaultTags||[]).map(x=>x===oldName?nn:x);
+      }
+      // dedupe tags array if needed
+      state.tags = dedupeTags(state.tags);
+      save();
+      closeModal();
+      toast("已重命名", `${oldName} → ${nn}`);
+      render();
+    }catch(e){
+      toast("失败", e.message||String(e));
+    }
+  });
+}
+
+function dedupeTags(tags){
+  const map = new Map();
+  for(const t of tags){
+    const name = normalizeTagName(t.name);
+    if(!name) continue;
+    if(!map.has(name)) map.set(name, {...t, name});
+    else{
+      // merge pinned/color preference
+      const ex = map.get(name);
+      ex.pinned = ex.pinned || t.pinned;
+      ex.color = ex.color || t.color;
+    }
+  }
+  return [...map.values()];
+}
+
+function openMergeTag(fromName){
+  const opts = allCustomTagsSorted().filter(t=>t.name!==fromName).map(t=>`<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`).join("");
+  openModal("合并标签", `
+    <div class="formgrid">
+      <div class="full">
+        <label>将标签</label>
+        <input type="text" value="${escapeHtml(fromName)}" disabled />
+      </div>
+      <div class="full">
+        <label>合并到</label>
+        <select id="mgTo">${opts}</select>
+        <div class="hint">合并后：所有使用 <b>${escapeHtml(fromName)}</b> 的地方会改为目标标签，并删除原标签。</div>
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn primary" id="btnDoMerge">确认合并</button>
+  `);
+
+  document.getElementById("btnDoMerge").addEventListener("click", ()=>{
+    try{
+      const toName = document.getElementById("mgTo").value;
+      if(!toName) throw new Error("请选择目标标签");
+      // replace in lots/drugs
+      for(const l of state.lots){
+        l.tags = (l.tags||[]).map(x=>x===fromName?toName:x);
+        l.tags = [...new Set(l.tags)];
+      }
+      for(const d of state.drugs){
+        d.defaultTags = (d.defaultTags||[]).map(x=>x===fromName?toName:x);
+        d.defaultTags = [...new Set(d.defaultTags)];
+      }
+      // remove from tags list
+      state.tags = state.tags.filter(t=>t.name!==fromName);
+      save();
+      closeModal();
+      toast("已合并", `${fromName} → ${toName}`);
+      render();
+    }catch(e){
+      toast("合并失败", e.message||String(e));
+    }
+  });
+}
+
+function deleteTag(name){
+  if(!confirm(`删除标签“${name}”？（会从所有批次/药品中移除该标签）`)) return;
+  state.tags = state.tags.filter(t=>t.name!==name);
+  for(const l of state.lots){
+    l.tags = (l.tags||[]).filter(x=>x!==name);
+  }
+  for(const d of state.drugs){
+    d.defaultTags = (d.defaultTags||[]).filter(x=>x!==name);
+  }
+  save();
+  toast("已删除标签", name);
+  render();
+}
+
+function cleanupEmptyTags(){
+  const used = new Set();
+  for(const l of state.lots) (l.tags||[]).forEach(t=>used.add(t));
+  for(const d of state.drugs) (d.defaultTags||[]).forEach(t=>used.add(t));
+  const before = state.tags.length;
+  state.tags = state.tags.filter(t=>used.has(t.name));
+  save();
+  toast("清理完成", `删除空标签 ${before - state.tags.length} 个`);
+  render();
+}
+
+/* ============ Export / Import ============ */
+function exportInventoryCSV(){
+  const rows = state.lots.map(l=>{
+    const d = getDrug(l.drugId);
+    return {
+      drug_name: d?.name||"",
+      alias: d?.alias||"",
+      cn_name: d?.cnName||"",
+      cas: d?.cas||"",
+      manufacturer: d?.manufacturer||"",
+      drug_code: d?.drugCode||"",
+      lot_no: l.lotNo||"",
+      exp_date: l.expDate||"",
+      opened_date: l.openedDate||"",
+      qty: l.qty??0,
+      unit: l.unit || d?.unit || "",
+      min_qty: l.minQty??0,
+      location: l.location||"",
+      status: l.status||"ACTIVE",
+      tags_custom: (l.tags||[]).join(";"),
+      tags_system: systemTagsForLot(l).join(";"),
+      last_used_at: l.lastUsedAt||"",
+      updated_at: l.updatedAt||"",
+      drug_notes: d?.notes||"",
+    };
+  });
+  downloadText(`inventory_${todayISO()}.csv`, "\ufeff"+toCSV(rows), "text/csv;charset=utf-8");
+  toast("已导出库存CSV");
+}
+
+function exportTxCSV(){
+  const rows = [...state.tx].sort((a,b)=>Date.parse(a.timeISO)-Date.parse(b.timeISO)).map(t=>{
+    const lot = getLot(t.lotId);
+    const d = lot ? getDrug(lot.drugId) : null;
+    return {
+      time: t.timeISO,
+      type: txTypeLabel(t.type),
+      drug_name: d?.name||"",
+      cn_name: d?.cnName||"",
+      cas: d?.cas||"",
+      manufacturer: d?.manufacturer||"",
+      drug_code: d?.drugCode||"",
+      lot_no: lot?.lotNo||"",
+      delta: t.qtyDelta,
+      unit: lot?.unit || d?.unit || "",
+      note: t.note||"",
+      location: lot?.location||"",
+    };
+  });
+  downloadText(`transactions_${todayISO()}.csv`, "\ufeff"+toCSV(rows), "text/csv;charset=utf-8");
+  toast("已导出流水CSV");
+}
+
+function exportJSON(){
+  downloadText(`lab_drug_manager_backup_${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json");
+  toast("已导出JSON备份");
+}
+
+function normalizeImportedState(obj){
+  const base = defaultState();
+  const st = obj && typeof obj === "object" ? obj : {};
+  st.drugs = Array.isArray(st.drugs) ? st.drugs : [];
+  st.lots  = Array.isArray(st.lots)  ? st.lots  : [];
+  st.tx    = Array.isArray(st.tx)    ? st.tx    : [];
+  st.tags  = Array.isArray(st.tags)  ? st.tags  : [];
+  st.meta  = st.meta && typeof st.meta==="object" ? st.meta : base.meta;
+  st.ui    = st.ui && typeof st.ui==="object" ? {...base.ui, ...st.ui} : {...base.ui};
+
+  for(const d of st.drugs){
+    d.id = d.id || uid("drug");
+    d.name = (d.name||"").trim();
+    d.cnName = d.cnName||"";
+    d.cas = d.cas||"";
+    d.manufacturer = d.manufacturer||"";
+    d.drugCode = d.drugCode||"";
+    d.alias = d.alias||"";
+    d.unit = d.unit||"";
+    d.notes = d.notes||"";
+    d.defaultLocation = d.defaultLocation||"";
+    d.defaultTags = Array.isArray(d.defaultTags) ? d.defaultTags.map(normalizeTagName).filter(Boolean) : [];
+  }
+  st.drugs = st.drugs.filter(d=>d.name);
+
+  for(const l of st.lots){
+    l.id = l.id || uid("lot");
+    l.drugId = l.drugId || "";
+    l.lotNo = l.lotNo||"";
+    l.expDate = l.expDate||"";
+    l.openedDate = l.openedDate||"";
+    l.qty = Number(l.qty||0); if(!isFinite(l.qty)) l.qty = 0;
+    l.minQty = Number(l.minQty||0); if(!isFinite(l.minQty) || l.minQty<0) l.minQty = 0;
+    l.unit = l.unit||"";
+    l.location = l.location||"";
+    l.tags = Array.isArray(l.tags) ? l.tags.map(normalizeTagName).filter(Boolean) : [];
+    l.status = l.status || "ACTIVE";
+    l.updatedAt = l.updatedAt || new Date().toISOString();
+    l.lastUsedAt = l.lastUsedAt || "";
+  }
+
+  // normalize tag list from lots/drugs
+  const tagMap = new Map();
+  for(const t of st.tags){
+    const name = normalizeTagName(t.name);
+    if(!name) continue;
+    if(!tagMap.has(name)) tagMap.set(name, {name, color: t.color||"#6ee7b7", pinned: !!t.pinned});
+    else{
+      const ex = tagMap.get(name);
+      ex.pinned = ex.pinned || !!t.pinned;
+      ex.color = ex.color || t.color;
+    }
+  }
+  st.tags = [...tagMap.values()];
+
+  for(const l of st.lots){
+    (l.tags||[]).forEach(t=>ensureTagExists(t));
+  }
+  for(const d of st.drugs){
+    (d.defaultTags||[]).forEach(t=>ensureTagExists(t));
+  }
+
+  for(const t of st.tx){
+    t.id = t.id || uid("tx");
+    t.timeISO = t.timeISO || new Date().toISOString();
+    t.type = t.type || "ADJ";
+    t.lotId = t.lotId || "";
+    t.qtyDelta = Number(t.qtyDelta||0); if(!isFinite(t.qtyDelta)) t.qtyDelta = 0;
+    t.note = t.note||"";
+  }
+  return st;
+}
+
+function importJSON(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const obj = JSON.parse(reader.result);
+      if(!obj || typeof obj !== "object") throw new Error("JSON格式不正确");
+      const st = normalizeImportedState(obj);
+
+      // referential integrity
+      const drugIds = new Set(st.drugs.map(d=>d.id));
+      st.lots = st.lots.filter(l=>drugIds.has(l.drugId));
+      const lotIds = new Set(st.lots.map(l=>l.id));
+      st.tx = st.tx.filter(t=>lotIds.has(t.lotId));
+
+      state = st;
+      save();
+      toast("导入成功", "已恢复数据（已自动补全缺失字段）");
+      closeModal();
+      setRoute(state.ui.route || "home");
+    }catch(e){
+      toast("导入失败", e.message||String(e));
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetAll(){
+  if(!confirm("确认清空所有数据？此操作不可撤销。建议先导出JSON备份。")) return;
+  state = defaultState();
+  save();
+  toast("已清空");
+  setRoute("home");
+}
+
+/* ============ Events ============ */
+document.getElementById("globalSearch").addEventListener("input", (e)=>{
+  state.ui.search = e.target.value;
+  save();
+  // re-render only current view if heavy
+  render();
+});
+
+document.getElementById("btnQuickIn").addEventListener("click", openInModal);
+document.getElementById("btnQuickUse").addEventListener("click", ()=>openUseModal(null));
+document.getElementById("btnExportCSV").addEventListener("click", exportInventoryCSV);
+
+document.getElementById("btnOpenIn").addEventListener("click", openInModal);
+document.getElementById("btnOpenUse").addEventListener("click", ()=>openUseModal(null));
+document.getElementById("btnOpenAdj").addEventListener("click", openAdjustModal);
+document.getElementById("btnOpenDisp").addEventListener("click", openDisposeModal);
+
+document.getElementById("btnExportTxCSV").addEventListener("click", exportTxCSV);
+
+document.getElementById("tagMode").addEventListener("change", (e)=>{ state.ui.tagMode=e.target.value; save(); renderInventory(); });
+document.getElementById("statusFilter").addEventListener("change", (e)=>{ state.ui.statusFilter=e.target.value; save(); renderInventory(); });
+document.getElementById("sortBy").addEventListener("change", (e)=>{ state.ui.sortBy=e.target.value; save(); renderInventory(); });
+document.getElementById("locFilter").addEventListener("input", (e)=>{ state.ui.locFilter=e.target.value; save(); renderInventory(); });
+
+document.getElementById("btnClearFilters").addEventListener("click", ()=>{
+  state.ui.tagSelected=[]; state.ui.tagExcluded=[];
+  state.ui.statusFilter="ALL"; state.ui.sortBy="EXP_ASC"; state.ui.locFilter="";
+  save(); renderInventory();
+});
+
+
+// tag color picker <-> hex sync
+(function(){
+  const pick = document.getElementById("newTagColor");
+  const hex = document.getElementById("newTagColorHex");
+  if(!pick || !hex) return;
+  const syncFromPicker = ()=>{ hex.value = pick.value.toLowerCase(); };
+  const syncFromHex = ()=>{
+    const v = normalizeHexColor(hex.value);
+    if(v){ pick.value = v; hex.value = v; }
+  };
+  pick.addEventListener("input", syncFromPicker);
+  hex.addEventListener("change", syncFromHex);
+  hex.addEventListener("blur", syncFromHex);
+  syncFromPicker();
+})();
+
+// auto/random tag color
+(function(){
+  const btn = document.getElementById("btnTagAutoColor");
+  const pick = document.getElementById("newTagColor");
+  const hex = document.getElementById("newTagColorHex");
+  if(!btn || !pick || !hex) return;
+  btn.addEventListener("click", ()=>{
+    const c = randomPaletteColor() || nextPaletteColor();
+    pick.value = c;
+    hex.value = c;
+  });
+})();
+document.getElementById("btnCreateTag").addEventListener("click", ()=>{
+  const name = normalizeTagName(document.getElementById("newTagName").value);
+  let color = normalizeHexColor(document.getElementById("newTagColorHex").value) || normalizeHexColor(document.getElementById("newTagColor").value);
+  if(!color) color = nextPaletteColor();
+  if(!name){ toast("标签名不能为空"); return; }
+  if(SYSTEM_TAGS.some(t=>t.name===name)){ toast("不能与系统标签重名"); return; }
+  ensureTagExists(name, color);
+  // set color explicitly
+  const t = state.tags.find(x=>x.name===name); if(t) t.color=color;
+  save();
+  document.getElementById("newTagName").value="";
+  toast("已创建标签", name);
+  render();
+});
+document.getElementById("newTagName").addEventListener("keydown", (e)=>{
+  if(e.key==="Enter"){ e.preventDefault(); document.getElementById("btnCreateTag").click(); }
+});
+document.getElementById("btnCleanupTags").addEventListener("click", cleanupEmptyTags);
+
+document.getElementById("btnExportJSON").addEventListener("click", exportJSON);
+document.getElementById("btnResetAll").addEventListener("click", resetAll);
+document.getElementById("btnImportJSON").addEventListener("click", ()=>{
+  const f = document.getElementById("importFile").files[0];
+  if(!f){ toast("请选择JSON文件"); return; }
+  importJSON(f);
+});
+
+document.getElementById("btnExportTxCSV").addEventListener("click", exportTxCSV);
+
+window.addEventListener("keydown", (e)=>{
+  const t = e.target;
+  const isTyping = t && (t.tagName==="INPUT" || t.tagName==="TEXTAREA" || t.tagName==="SELECT" || t.isContentEditable);
+  if(e.key==="Escape"){ closeModal(); return; }
+  if(isTyping) return;
+
+  const ctrl = e.ctrlKey || e.metaKey; // macOS ⌘
+  if(ctrl && (e.key==="k" || e.key==="K")){
+    e.preventDefault();
+    document.getElementById("globalSearch").focus();
+    return;
+  }
+  if(ctrl && e.shiftKey && (e.key==="i" || e.key==="I")){
+    e.preventDefault();
+    openInModal();
+    return;
+  }
+  if(ctrl && e.shiftKey && (e.key==="u" || e.key==="U")){
+    e.preventDefault();
+    openUseModal(null);
+    return;
+  }
+});
+
+/* initial */
+setRoute(state.ui.route || "home");
+
+/* expose for inline buttons in modal foot */
+window.closeModal = closeModal;
+</script>
+</body>
+</html>
